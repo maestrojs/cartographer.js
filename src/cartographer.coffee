@@ -5,5 +5,6 @@
   Version: 0.1.0
 ###
 
+###import "sourceResolver.coffee" ###
 ###import "main.coffee" ####
 ###import "template.coffee" ###

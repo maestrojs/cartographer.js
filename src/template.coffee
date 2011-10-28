@@ -1,4 +1,4 @@
-Template = (target, namespace) ->
+Template = (name, namespace) ->
     self = this
 
     ###import "lists.coffee" ####
@@ -19,6 +19,8 @@ Template = (target, namespace) ->
         fqn = createFqn namespace, id
         tag = element.tagName.toUpperCase()
         context = context or root
+
+        
 
         if element.children != undefined and element.children.length > 0
             createChildren = ( crawl( context, root, fqn, child ) for child in element.children )
@@ -146,8 +148,11 @@ Template = (target, namespace) ->
     @apply = (model) ->
         fn = crawl this, model, namespace, @element, @apply
         fn @html, model
-    @element = $(target)[0]
-    @fqn = createFqn namespace, @element["id"]
+    #@element = $(target)[0]
+    #@fqn = createFqn namespace, @element["id"]
+    @name = name
+    @fqn = namespace
+    @element = resolver.resolve name
     @eventChannel = postal.channel(@fqn + "_events")
     @html = DOMBuilder.dom
     @template = {}
