@@ -3,7 +3,7 @@ Cartographer = () ->
 
   postal.channel("cartographer").subscribe (m) ->
     if m.map
-      self.map m.name
+      self.map m.name, m.namespace
     else if m.apply
       self.apply m.template, m.proxy, m.render, m.error
 
@@ -17,11 +17,11 @@ Cartographer = () ->
     template = template or= proxy.__template__
     templateInstance = @templates[template]
     if templateInstance
-      result = templateInstance.apply proxy
-      if render
-        render( result, templateInstance.fqn )
-      else
-        $("#" + templateInstance.name ).replaceWith( result )
+      templateInstance.apply proxy, (result) ->
+        if render
+          render( result, templateInstance.fqn )
+        else
+          $( '#' + templateInstance.name ).replaceWith( result )
     else if error
       error()
 

@@ -14,61 +14,23 @@ Template = (name, namespace) ->
     copyProperties = ( source, target, list ) ->
       ( conditionalCopy source, target, x, list[x] ) for x in _.keys(list)
 
-    crawl = ( context, root, namespace, element ) ->
-        id = element["id"]
-        fqn = createFqn namespace, id
-        tag = element.tagName.toUpperCase()
-        context = context or root
-
-        
-
-        if element.children != undefined and element.children.length > 0
-            createChildren = ( crawl( context, root, fqn, child ) for child in element.children )
-
-            call = ( html, model, parentFqn, idx ) ->
-                actualId = if id == "" then idx else id
-                myFqn = createFqn parentFqn, actualId
-                val = if actualId == fqn or actualId == undefined then model else model?[actualId]
-                #collection = if val instanceof ArrayWrapper then val else val?.items
-                collection = if val.length then val else val?.items
-                #if collection and collection instanceof ArrayWrapper
-                if collection and collection.length
-                    list = []
-                    childFactory = createChildren[0]
-                    context.template[myFqn + "_add"] = ( newIndex, newModel ) ->
-                        childFactory( html, newModel, myFqn, newIndex )
-
-                    for indx in [0..collection.length-1]
-                        list.push ( call( html, collection, myFqn, indx ) for call in createChildren )
-
-                    childElement = makeTag( context, html, tag, element, myFqn, actualId, list, root, model )
-                    context[myFqn] = childElement
-                    childElement
-                else
-                    controls = ( call( html, val, myFqn ) for call in createChildren )
-                    childElement = makeTag( context, html, tag, element, myFqn, actualId, controls, root, model )
-                    context[myFqn] = childElement
-                    childElement
-
-            context.template[fqn] = call
-            call
+    crawl = ( context, root, namespace, element, onDone ) ->
+        tmpId = createFqn namespace, element?.id
+        if root[tmpId]?.__template__
+          resolver.resolve root[tmpId].__template__, (x) ->
+            element = x
+            #newNamespace = trimFqn namespace
+            onElement(context, root, namespace, element, onDone)
         else
-            call = ( html, model, parentFqn, idx ) ->
-                actualId = if id == "" then idx else id
-                myFqn = createFqn parentFqn, actualId
-                val = if actualId == fqn then model else model?[actualId]
-                childElement = makeTag( context, html, tag, element, myFqn, actualId, val, root, model )
-                context[myFqn] = childElement
-                childElement
-
-            context.template[fqn] = call
-            call
+          onElement(context, root, namespace, element, onDone)
 
     createFqn = ( namespace, id ) ->
         if id == undefined or id == ""
             result = namespace
         else if namespace == undefined or namespace == ""
             result = id
+        else if namespace == id
+            result = namespace
         else
             result = "#{namespace}.#{id}"
         result
@@ -98,6 +60,55 @@ Template = (name, namespace) ->
             copyProperties model[id], element, modelTargets
         setupEvents( model?[id], root, myFqn, element, context )
         element
+
+    onElement = ( context, root, namespace, element, onDone ) ->
+          id = element["id"]
+          fqn = createFqn namespace, id
+          tag = element.tagName.toUpperCase()
+          context = context or root
+          if element.children != undefined and element.children.length > 0
+            createChildren = []
+            onCall = (x) ->
+              createChildren.push x
+              if createChildren.length == element.children.length
+                call = ( html, model, parentFqn, idx ) ->
+                  actualId = if id == "" then idx else id
+                  myFqn = createFqn parentFqn, actualId
+                  val = if actualId == fqn or actualId == undefined then model else model?[actualId]
+                  collection = if val.length then val else val?.items
+                  if collection and collection.length
+                      list = []
+                      childFactory = createChildren[0]
+                      context.template[myFqn + "_add"] = ( newIndex, newModel ) ->
+                          childFactory( html, newModel, myFqn, newIndex )
+
+                      for indx in [0..collection.length-1]
+                          list.push ( call( html, collection, myFqn, indx ) for call in createChildren )
+
+                      childElement = makeTag( context, html, tag, element, myFqn, actualId, list, root, model )
+                      context[myFqn] = childElement
+                      childElement
+                  else
+                      controls = ( call( html, val, myFqn ) for call in createChildren )
+                      childElement = makeTag( context, html, tag, element, myFqn, actualId, controls, root, model )
+                      context[myFqn] = childElement
+                      childElement
+
+                context.template[fqn] = call
+                onDone call
+
+            ( crawl( context, root, fqn, child, (x) -> onCall x ) for child in element.children )
+          else
+            call = ( html, model, parentFqn, idx ) ->
+                actualId = if id == "" then idx else id
+                myFqn = createFqn parentFqn, actualId
+                val = if actualId == fqn then model else model?[actualId]
+                childElement = makeTag( context, html, tag, element, myFqn, actualId, val, root, model )
+                context[myFqn] = childElement
+                childElement
+
+            context.template[fqn] = call
+            onDone call
 
     setupEvents = ( model, root, fqn, element, context ) ->
       if model
@@ -131,6 +142,10 @@ Template = (name, namespace) ->
             newElement = context.template[addName]( childKey, m.parent )
             $(context[parentKey]).append newElement
 
+    trimFqn = (fqn) ->
+      last = fqn.lastIndexOf('.')
+      fqn.substring 0, last
+
     wireup = ( alias, event, model, root, fqn, element, context ) ->
       handler = model[alias]
       if handler
@@ -145,18 +160,19 @@ Template = (name, namespace) ->
                 x.stopPropagation()
             context.eventChannel.publish( { id: fqn, model: model, control: context[fqn], event: event, context: context, info: x } )
 
-    @apply = (model) ->
-        fn = crawl this, model, namespace, @element, @apply
-        fn @html, model
+    @apply = (model, onResult) ->
+        crawl self, model, namespace, self.element, (x) ->
+          onResult x( self.html, model )
     #@element = $(target)[0]
     #@fqn = createFqn namespace, @element["id"]
     @name = name
     @fqn = namespace
-    @element = resolver.resolve name
+    @element = {}
     @eventChannel = postal.channel(@fqn + "_events")
     @html = DOMBuilder.dom
     @template = {}
 
+    resolver.resolve name, (x) -> self.element = x
     subscribe( self, self.fqn + "_model" )
 
-    this
+    self

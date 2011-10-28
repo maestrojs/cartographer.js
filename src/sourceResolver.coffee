@@ -3,22 +3,27 @@ SourceResolver = () ->
   sources = []
 
   checkPage = (name) ->
-    element = $( '#' + name )
-    if element
-      return element[0]
+    templateElement = $( '#' + name + '-template > :only-child' )
+    defaultElement = $( '#' + name )
+    if defaultElement
+      defaultElement[0]
+    else if templateElement
+      templateElement[0]
     else
       null
-
-  checkSources = (name) ->
-    result = _.find( sources, (s) -> s.resolve name )
-    $(result)[0]
 
   @addSource = (source) ->
     sources.push source
 
-  @resolve = (name) ->
-    embedded = checkPage name
-    embedded or= checkSources name
+  @resolve = (name, onFound, notFound) ->
+    onPage = checkPage name
+    if onPage
+      onFound onPage
+    else
+      index = 0
+      finder = () -> sources[index].resolve name, (x) -> onFound $(x)[0], () ->
+          index++
+          finder()
 
   self
 

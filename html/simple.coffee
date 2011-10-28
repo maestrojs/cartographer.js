@@ -55,7 +55,6 @@ Ingredient = ( item, qty ) ->
 
 Step = ( step, detail ) ->
     {
-        __template__: "steps"
         step: step
         detail: detail
     }
@@ -64,7 +63,7 @@ BuildIngredientList = ( list, recipe ) ->
     recipe.ingredients.push( new Ingredient( x[0],x[1] ) ) for x in list
 
 BuildSteps = ( list, recipe ) ->
-    recipe.steps.push( new Step( x[0], x[1] ) ) for x in list
+    recipe.steps.value.push( new Step( x[0], x[1] ) ) for x in list
 
 Recipe = ( Title, Description, Ingredients, Steps ) ->
     recipe =
@@ -80,7 +79,9 @@ Recipe = ( Title, Description, Ingredients, Steps ) ->
 
         description: Description
         ingredients: []
-        steps: []
+        steps:
+          __template__: "steps"
+          value: []
 
         sort:
           value: "Sort"
@@ -156,9 +157,8 @@ recipe2 = new Recipe(
     ]
 )
 
-recipes = [ recipe1, recipe2 ]
-
-#list = replicant.create recipes, null, "recipes"
+recipes =
+  list: [ recipe1, recipe2 ]
 
 $( ->
     repl = postal.channel("replicant")
@@ -171,7 +171,7 @@ $( ->
 
     cart.publish
       map: true
-      name: "list"
+      name: "recipes"
       namespace: "recipes"
 
     cart.publish
@@ -185,8 +185,9 @@ $( ->
       callback: (x) ->
         cart.publish
           apply: true
-          template: "list"
+          template: "recipes"
           proxy: x
+          render: (x) -> $("#recipes > #list").replaceWith(x)
 
     #cartographer.map( "#recipe" )
     #cartographer.map( "#recipes > #list" )
