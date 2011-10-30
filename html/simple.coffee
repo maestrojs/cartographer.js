@@ -187,7 +187,7 @@ $( ->
           apply: true
           template: "recipes"
           proxy: x
-          render: (x) -> $("#recipes > #list").replaceWith(x)
+          render: (x) -> $("#recipes").replaceWith(x)
 
     #cartographer.map( "#recipe" )
     #cartographer.map( "#recipes > #list" )

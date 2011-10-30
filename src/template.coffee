@@ -16,10 +16,11 @@ Template = (name, namespace) ->
 
     crawl = ( context, root, namespace, element, onDone ) ->
         tmpId = createFqn namespace, element?.id
-        if root[tmpId]?.__template__
+        if root[tmpId]?.__template__ && element && element.id && not element.nested
           resolver.resolve root[tmpId].__template__, (x) ->
             element = x
-            #newNamespace = trimFqn namespace
+            console.log "*** #{namespace} - #{element.id} - #{element.tagName} ***"
+            element.nested = true
             onElement(context, root, namespace, element, onDone)
         else
           onElement(context, root, namespace, element, onDone)
@@ -65,6 +66,9 @@ Template = (name, namespace) ->
           id = element["id"]
           fqn = createFqn namespace, id
           tag = element.tagName.toUpperCase()
+
+          console.log "#{namespace} - #{id} - #{tag}"
+
           context = context or root
           if element.children != undefined and element.children.length > 0
             createChildren = []
@@ -75,6 +79,9 @@ Template = (name, namespace) ->
                   actualId = if id == "" then idx else id
                   myFqn = createFqn parentFqn, actualId
                   val = if actualId == fqn or actualId == undefined then model else model?[actualId]
+
+                  console.log "#{namespace} - #{id} - #{myFqn} - #{actualId} - #{val} - #{model} "
+
                   collection = if val.length then val else val?.items
                   if collection and collection.length
                       list = []
@@ -163,8 +170,6 @@ Template = (name, namespace) ->
     @apply = (model, onResult) ->
         crawl self, model, namespace, self.element, (x) ->
           onResult x( self.html, model )
-    #@element = $(target)[0]
-    #@fqn = createFqn namespace, @element["id"]
     @name = name
     @fqn = namespace
     @element = {}
@@ -172,7 +177,9 @@ Template = (name, namespace) ->
     @html = DOMBuilder.dom
     @template = {}
 
-    resolver.resolve name, (x) -> self.element = x
+    resolver.resolve name, (x) ->
+      self.element = x
+      console.log x
     subscribe( self, self.fqn + "_model" )
 
     self

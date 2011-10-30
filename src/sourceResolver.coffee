@@ -5,10 +5,10 @@ SourceResolver = () ->
   checkPage = (name) ->
     templateElement = $( '#' + name + '-template > :only-child' )
     defaultElement = $( '#' + name )
-    if defaultElement
-      defaultElement[0]
-    else if templateElement
-      templateElement[0]
+    if templateElement.length > 0
+      templateElement[0].clone()
+    else if defaultElement.length > 0
+      defaultElement[0].clone()
     else
       null
 
