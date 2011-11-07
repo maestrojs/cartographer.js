@@ -6,9 +6,9 @@ SourceResolver = () ->
     templateElement = $( '#' + name + '-template > :only-child' )
     defaultElement = $( '#' + name )
     if templateElement.length > 0
-      templateElement[0].clone()
+      templateElement[0]
     else if defaultElement.length > 0
-      defaultElement[0].clone()
+      defaultElement[0]
     else
       null
 

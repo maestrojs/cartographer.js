@@ -154,18 +154,19 @@ Template = (name, namespace) ->
       fqn.substring 0, last
 
     wireup = ( alias, event, model, root, fqn, element, context ) ->
-      handler = model[alias]
-      if handler
-        handlerProxy = (x) -> handler.apply(
-          model,
-          [root, { id: fqn, control: context[fqn], event: event, context: context, info: x } ]
+      element[event] = (x) ->
+        if event == "onchange"
+              x.stopPropagation()
+        context.eventChannel.publish(
+          alias: alias
+          id: fqn
+          info: x
+          control: context[fqn]
+          context: context
+          event: event
+          model: model
+          root: root
         )
-        element[event] = handlerProxy
-      else
-        element[event] = (x) ->
-            if event == "onchange"
-                x.stopPropagation()
-            context.eventChannel.publish( { id: fqn, model: model, control: context[fqn], event: event, context: context, info: x } )
 
     @apply = (model, onResult) ->
         crawl self, model, namespace, self.element, (x) ->

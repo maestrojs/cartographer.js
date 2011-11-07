@@ -124,6 +124,9 @@ ObjectWrapper = function(target, onEvent, namespace, addChild, removeChild) {
   this.subscribe = function(channelName) {
     return proxy.subscribe(channelName);
   };
+  this.unsubscribe = function() {
+    return proxy.unsubscribe();
+  };
   this.getPath = function() {
     return proxy.getPath();
   };
@@ -169,38 +172,17 @@ ArrayWrapper = function(target, onEvent, namespace, addChild, removeChild) {
   this.shift = function() {
     return proxy.shift();
   };
+  this.sort = function(compare) {
+    return proxy.sort(compare);
+  };
   this.subscribe = function(channelName) {
     return proxy.subscribe(channelName);
   };
+  this.unsubscribe = function() {
+    return proxy.unsubscribe();
+  };
   this.unshift = function(value) {
     return proxy.unshift(value);
-  };
-  this.reverse = function() {
-    return proxy.reverse();
-  };
-  this.sort = function(fn) {
-    return proxy.sort(fn);
-  };
-  this.join = function(separator) {
-    return proxy.join(separator);
-  };
-  this.toString = function() {
-    return proxy.toString();
-  };
-  this.splice = function() {
-    return proxy.splice.apply(proxy, Array.prototype.slice.call(arguments, 0));
-  };
-  this.slice = function() {
-    return proxy.slice.apply(proxy, Array.prototype.slice.call(arguments, 0));
-  };
-  this.indexOf = function(x) {
-    return proxy.indexOf(x);
-  };
-  this.lastIndexOf = function(x) {
-    return proxy.lastIndexOf(x);
-  };
-  this.concat = function() {
-    return proxy.concat.apply(proxy, Array.prototype.slice.call(arguments, 0));
   };
   return this;
 };
@@ -247,14 +229,27 @@ Proxy = function(wrapper, target, onEvent, namespace, addChild, removeChild) {
     return addToParent(fqn, child, key);
   };
   this.subscribe = function(channelName) {
-    if (proxySubscription && proxySubscription.unsubscribe) {
-      proxySubscription.unsubscribe();
-    }
+    self.unsubscribe();
     return proxySubscription = postal.channel(channelName).subscribe(function(m) {
       if (m.event === "onchange") {
         return wrapper[m.id] = m.control.value;
+      } else if (wrapper[m.id][m.alias]) {
+        return wrapper[m.id][m.alias].apply(m.model, [
+          m.root, {
+            id: m.id,
+            control: m.control,
+            event: m.event,
+            context: m.context,
+            info: m.x
+          }
+        ]);
       }
     });
+  };
+  this.unsubscribe = function() {
+    if (proxySubscription && proxySubscription.unsubscribe) {
+      return proxySubscription.unsubscribe();
+    }
   };
   this.getHandler = function() {
     return onEvent;
@@ -373,7 +368,11 @@ Proxy = function(wrapper, target, onEvent, namespace, addChild, removeChild) {
   };
   this.original = subject;
   this.add = function(key, keys) {
-    this.recrawl(keys);
+    var k, _i, _len;
+    for (_i = 0, _len = keys.length; _i < _len; _i++) {
+      k = keys[_i];
+      createMemberProxy(k);
+    }
     notify(buildFqn(fullPath, "length"), "wrote", {
       value: subject.length,
       previous: -1 + subject.length
@@ -398,7 +397,11 @@ Proxy = function(wrapper, target, onEvent, namespace, addChild, removeChild) {
     }).apply(this));
   };
   this.remove = function(key, value, keys) {
-    this.recrawl(keys);
+    var k, _i, _len;
+    for (_i = 0, _len = keys.length; _i < _len; _i++) {
+      k = keys[_i];
+      createMemberProxy(k);
+    }
     notify(buildFqn(fullPath, "length"), "wrote", {
       value: subject.length,
       previous: 1 + subject.length
@@ -407,27 +410,8 @@ Proxy = function(wrapper, target, onEvent, namespace, addChild, removeChild) {
       index: subject.length,
       value: value
     });
+    console.log(wrapper);
     return value;
-  };
-  this.recrawl = function(keys) {
-    var k, _i, _len, _results;
-    _results = [];
-    for (_i = 0, _len = keys.length; _i < _len; _i++) {
-      k = keys[_i];
-      _results.push(createMemberProxy(k));
-    }
-    return _results;
-  };
-  this.genReadNotices = function(keys) {
-    var k, _i, _len, _results;
-    _results = [];
-    for (_i = 0, _len = keys.length; _i < _len; _i++) {
-      k = keys[_i];
-      _results.push(notify(buildFqn(fullPath, k), "read", {
-        value: wrapper[k]
-      }));
-    }
-    return _results;
   };
   this.pop = function() {
     var key, value;
@@ -449,165 +433,15 @@ Proxy = function(wrapper, target, onEvent, namespace, addChild, removeChild) {
       return _results;
     }).apply(this));
   };
-  this.reverse = function() {
+  this.sort = function(sorter) {
     var old;
-    old = wrapper;
-    subject.reverse();
+    old = subject;
+    subject = subject.sort(sorter);
     walk(subject);
-    return notify(fullPath, "reversed", {
-      index: subject.length,
+    return notify(fullPath, "wrote", {
       value: wrapper,
       previous: old
     });
-  };
-  this.sort = function() {
-    var old;
-    old = wrapper;
-    subject.sort.apply(subject, arguments);
-    walk(subject);
-    return notify(fullPath, "sorted", {
-      index: subject.length,
-      value: wrapper,
-      previous: old
-    });
-  };
-  this.join = function() {
-    var value, _i, _ref, _results;
-    value = subject.join.apply(subject, arguments);
-    this.genReadNotices((function() {
-      _results = [];
-      for (var _i = 0, _ref = subject.length - 1; 0 <= _ref ? _i <= _ref : _i >= _ref; 0 <= _ref ? _i++ : _i--){ _results.push(_i); }
-      return _results;
-    }).apply(this));
-    return value;
-  };
-  this.toString = function() {
-    var value, _i, _ref, _results;
-    value = subject.toString.apply(subject, arguments);
-    this.genReadNotices((function() {
-      _results = [];
-      for (var _i = 0, _ref = subject.length - 1; 0 <= _ref ? _i <= _ref : _i >= _ref; 0 <= _ref ? _i++ : _i--){ _results.push(_i); }
-      return _results;
-    }).apply(this));
-    return value;
-  };
-  this.indexOf = function(x) {
-    var i, len, value;
-    i = void 0;
-    value = -1;
-    len = void 0;
-    if (typeof x === "ObjectWrapper" || typeof x === "ArrayWrapper") {
-      len = wrapper.length;
-      while (i < len) {
-        if (wrapper[i] === x) {
-          value = i;
-          break;
-        }
-        i++;
-      }
-    } else {
-      value = subject.indexOf(x);
-    }
-    notify(buildFqn(fullPath, value), "read", {
-      index: value,
-      value: wrapper[value]
-    });
-    return value;
-  };
-  this.lastIndexOf = function(x) {
-    var i, value;
-    i = wrapper.length - 1;
-    value = -1;
-    if (typeof x === "ObjectWrapper" || typeof x === "ArrayWrapper") {
-      while (i >= 0) {
-        if (wrapper[i] === x) {
-          value = i;
-          break;
-        }
-        i--;
-      }
-    } else {
-      value = subject.indexOf(x);
-    }
-    notify(buildFqn(fullPath, value), "read", {
-      index: value,
-      value: wrapper[value]
-    });
-    return value;
-  };
-  this.splice = function() {
-    var args, chgLen, i, k, len, newItems, stIdx, subjLen, value, _ref;
-    args = Array.prototype.slice.call(arguments, 0, 2);
-    newItems = Array.prototype.slice.call(arguments, 2);
-    len = newItems.length;
-    subjLen = subject.length;
-    value = [];
-    i = 0;
-    stIdx = 0;
-    if (args[0] >= 0) {
-      stIdx = i = args[0];
-    } else {
-      stIdx = i = subject.length + args[0];
-    }
-    chgLen = args[1] + args[0];
-    while (i <= subjLen) {
-      if (i < chgLen) {
-        value.push(wrapper[i]);
-        this.remove(i, wrapper[i], []);
-      }
-      removeChildPath(i);
-      i++;
-    }
-    subject.splice.apply(subject, args.concat(newItems));
-    for (k = stIdx, _ref = subject.length - 1; stIdx <= _ref ? k <= _ref : k >= _ref; stIdx <= _ref ? k++ : k--) {
-      this.add(k, [k]);
-    }
-    return replicant.create(value, fullPath);
-  };
-  this.slice = function() {
-    var endIdx, startIdx, value;
-    startIdx = 0;
-    endIdx = subject.length;
-    value = [];
-    if (arguments[0] < 0) {
-      startIdx = subject.length + arguments[0];
-    } else {
-      startIdx = arguments[0];
-    }
-    if (arguments[1]) {
-      if (arguments[1] < 0) {
-        endIdx = subject.length + arguments[1];
-      } else {
-        endIdx = arguments[1];
-      }
-    }
-    while (startIdx < endIdx) {
-      value.push(wrapper[startIdx]);
-      startIdx++;
-    }
-    return replicant.create(value, fullPath);
-  };
-  this.concat = function() {
-    var args, i, len, value;
-    value = [];
-    args = Array.prototype.slice.call(arguments, 0);
-    i = 0;
-    len = subject.length;
-    while (i < subject.length) {
-      value.push(wrapper[i]);
-      i++;
-    }
-    i = 0;
-    _.each(args, function(arg) {
-      if (_.isArray(arg)) {
-        return _.each(arg, function(item) {
-          return value.push(item);
-        });
-      } else {
-        return value.push(arg);
-      }
-    });
-    return replicant.create(value, fullPath);
   };
   Object.defineProperty(wrapper, "length", {
     get: function() {
@@ -681,40 +515,30 @@ Replicant = function() {
     }
   });
   this.create = function(target, onevent, namespace) {
-    var channel, nmspc, onEvent, proxy;
-    onEvent = function(parent, key, event, info) {
+    var channel, onEvent, proxy;
+    dependencyManager.addNamespace(namespace);
+    channel = postal.channel(namespace + "_model");
+    onEvent = onevent || (onevent = function(parent, key, event, info) {
       return channel.publish({
         event: event,
         parent: parent,
         key: key,
         info: info
       });
-    };
-    nmspc = "";
-    if (arguments.length === 2) {
-      if (typeof arguments[1] === "function") {
-        onEvent = onevent;
-      } else {
-        nmspc = onevent;
-      }
-    } else if (arguments.length === 3) {
-      onEvent = onevent || (onevent = onEvent);
-      nmspc = namespace;
-    }
-    dependencyManager.addNamespace(nmspc);
-    channel = postal.channel(nmspc + "_model");
+    });
+    namespace = namespace || (namespace = "");
     proxy = onProxyOf(target, function() {
-      return new ArrayWrapper(target, onEvent, nmspc);
+      return new ArrayWrapper(target, onEvent, namespace);
     }, function() {
-      return new ObjectWrapper(target, onEvent, nmspc);
+      return new ObjectWrapper(target, onEvent, namespace);
     }, function() {
       return target;
     });
     (function() {
       return target;
     });
-    proxy.subscribe(nmspc + "_events");
-    add(nmspc, proxy);
+    proxy.subscribe(namespace + "_events");
+    add(namespace, proxy);
     return proxy;
   };
   return self;
