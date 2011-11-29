@@ -28,7 +28,7 @@ onProxyOf = function(value, ifArray, ifObject, otherwise) {
     return otherwise();
   }
 };
-var Dependency, DependencyManager, dependencyManager;
+var Dependency, DependencyList, DependencyManager, dependencyManager;
 Dependency = function(context, key, dependencies) {
   var self;
   self = this;
@@ -45,12 +45,14 @@ Dependency = function(context, key, dependencies) {
   this.target = context;
   return self;
 };
-DependencyManager = function() {
-  var addDependency, checkDependencies, dependencies, notify, self, watchingFor;
+DependencyList = function(namespace) {
+  var channelName, dependencies, fqn, self, subscription, watchingFor;
   dependencies = [];
   watchingFor = null;
   self = this;
-  addDependency = function(context, fqn, key) {
+  subscription = {};
+  fqn = namespace;
+  this.addDependency = function(context, key) {
     var dependency;
     dependency = _.detect(dependencies, function(x) {
       return x.key === fqn;
@@ -62,7 +64,7 @@ DependencyManager = function() {
       return dependencies.push(dependency);
     }
   };
-  checkDependencies = function(channelName, key) {
+  this.checkDependencies = function(key) {
     return _(dependencies).chain().select(function(x) {
       return x.isHit(key);
     }).each(function(x) {
@@ -77,29 +79,43 @@ DependencyManager = function() {
       });
     });
   };
-  notify = function(key, event, info) {
-    return onEvent(wrapper, key, event, info);
+  this.clear = function() {
+    dependencies = [];
+    subscription.unsubscribe();
+    return subscription = {};
   };
+  channelName = namespace + "_model";
+  self[channelName] = postal.channel(channelName);
+  subscription = self[channelName].subscribe(function(m) {
+    if (m.event === "wrote" || m.event === "added" || m.event === "removed") {
+      return self.checkDependencies( m.key);
+    }
+  });
+  return self;
+};
+DependencyManager = function() {
+  var lists, self, watchRoot, watchingFor;
+  lists = {};
+  watchingFor = null;
+  watchRoot = null;
+  self = this;
   this.watchFor = function(fqn) {
-    return watchingFor = fqn;
+    watchingFor = fqn;
+    return watchRoot = fqn.split('.')[0];
   };
   this.endWatch = function() {
     return watchingFor = null;
   };
   this.recordAccess = function(proxy, key) {
     if (watchingFor) {
-      return addDependency(proxy, watchingFor, key);
+      return lists[watchRoot].addDependency(proxy, key);
     }
   };
   this.addNamespace = function(namespace) {
-    var channelName;
-    channelName = namespace + "_model";
-    self[channelName] = postal.channel(channelName);
-    return self[channelName].subscribe(function(m) {
-      if (m.event === "wrote" || m.event === "added" || m.event === "removed") {
-        return checkDependencies(channelName, m.key);
-      }
-    });
+    if (lists[namespace]) {
+      lists[namespace].clear();
+    }
+    return lists[namespace] = new DependencyList(namespace);
   };
   return self;
 };
@@ -115,6 +131,7 @@ ObjectWrapper = function(target, onEvent, namespace, addChild, removeChild) {
     return proxy.addDependencyProperty(key, observable);
   };
   this.extractAs = function(alias) {
+    proxy.unsubscribe();
     return replicant.create(proxy.original, null, alias);
   };
   this.getOriginal = function() {
@@ -148,6 +165,7 @@ ArrayWrapper = function(target, onEvent, namespace, addChild, removeChild) {
     return proxy.addDependencyProperty(key, observable);
   };
   this.extractAs = function(alias) {
+    proxy.unsubscribe();
     return replicant.create(proxy.original, null, alias);
   };
   this.getOriginal = function() {
@@ -187,7 +205,7 @@ ArrayWrapper = function(target, onEvent, namespace, addChild, removeChild) {
   return this;
 };
 Proxy = function(wrapper, target, onEvent, namespace, addChild, removeChild) {
-  var addChildPath, addToParent, ancestors, createMemberProxy, createProxyFor, fullPath, getLocalFqn, getLocalPath, notify, path, proxy, proxySubscription, readHook, removeChildPath, removeFromParent, self, subject, unwindAncestralDependencies, walk;
+  var addChildPath, addToParent, ancestors, createMemberProxy, createProxyFor, fullPath, getLocalFqn, getLocalPath, notify, path, proxy, readHook, removeChildPath, removeFromParent, self, subject, unwindAncestralDependencies, walk;
   self = this;
   fullPath = namespace || (namespace = "");
   addToParent = addChild || function() {};
@@ -206,7 +224,9 @@ Proxy = function(wrapper, target, onEvent, namespace, addChild, removeChild) {
   subject = target;
   ancestors = [];
   readHook = null;
-  proxySubscription = {};
+  this.proxySubscription = {
+    unsubscribe: function() {}
+  };
   addChildPath = function(lqn, child, key) {
     var fqn, isRoot, propertyName;
     isRoot = ancestors.length === 0;
@@ -230,7 +250,7 @@ Proxy = function(wrapper, target, onEvent, namespace, addChild, removeChild) {
   };
   this.subscribe = function(channelName) {
     self.unsubscribe();
-    return proxySubscription = postal.channel(channelName).subscribe(function(m) {
+    return self.proxySubscription = postal.channel(channelName).subscribe(function(m) {
       if (m.event === "onchange") {
         return wrapper[m.id] = m.control.value;
       } else if (wrapper[m.id][m.alias]) {
@@ -247,8 +267,8 @@ Proxy = function(wrapper, target, onEvent, namespace, addChild, removeChild) {
     });
   };
   this.unsubscribe = function() {
-    if (proxySubscription && proxySubscription.unsubscribe) {
-      return proxySubscription.unsubscribe();
+    if (self.proxySubscription) {
+      return self.proxySubscription.unsubscribe();
     }
   };
   this.getHandler = function() {
@@ -516,6 +536,9 @@ Replicant = function() {
   });
   this.create = function(target, onevent, namespace) {
     var channel, onEvent, proxy;
+    if (proxies[namespace]) {
+      proxies[namespace].unsubscribe();
+    }
     dependencyManager.addNamespace(namespace);
     channel = postal.channel(namespace + "_model");
     onEvent = onevent || (onevent = function(parent, key, event, info) {
