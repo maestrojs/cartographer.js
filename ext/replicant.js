@@ -28,7 +28,7 @@ onProxyOf = function(value, ifArray, ifObject, otherwise) {
     return otherwise();
   }
 };
-var Dependency, DependencyManager, dependencyManager;
+var Dependency, DependencyList, DependencyManager, dependencyManager;
 Dependency = function(context, key, dependencies) {
   var self;
   self = this;
@@ -45,12 +45,14 @@ Dependency = function(context, key, dependencies) {
   this.target = context;
   return self;
 };
-DependencyManager = function() {
-  var addDependency, checkDependencies, dependencies, notify, self, watchingFor;
+DependencyList = function(namespace) {
+  var channelName, dependencies, fqn, self, subscription, watchingFor;
   dependencies = [];
   watchingFor = null;
   self = this;
-  addDependency = function(context, fqn, key) {
+  subscription = {};
+  fqn = namespace;
+  this.addDependency = function(context, key) {
     var dependency;
     dependency = _.detect(dependencies, function(x) {
       return x.key === fqn;
@@ -62,44 +64,60 @@ DependencyManager = function() {
       return dependencies.push(dependency);
     }
   };
-  checkDependencies = function(channelName, key) {
-    return _(dependencies).chain().select(function(x) {
+  this.checkDependencies = function(key) {
+    var hits;
+    hits = _.select(dependencies, function(x) {
       return x.isHit(key);
-    }).each(function(x) {
+    });
+    return _.each(hits, function(x) {
       return self[channelName].publish({
         event: "wrote",
         parent: x.target,
-        key: x.key,
+        key: fqn,
         info: {
-          value: x.target[x.key],
+          value: x.target[fqn],
           previous: null
         }
       });
     });
   };
-  notify = function(key, event, info) {
-    return onEvent(wrapper, key, event, info);
+  this.clear = function() {
+    dependencies = [];
+    subscription.unsubscribe();
+    return subscription = {};
   };
+  channelName = fqn.split('.')[0] + "_model";
+  self[channelName] = postal.channel(channelName);
+  subscription = self[channelName].subscribe(function(m) {
+    if (m.event === "wrote" || m.event === "added" || m.event === "removed") {
+      return self.checkDependencies(m.key);
+    }
+  });
+  return self;
+};
+DependencyManager = function() {
+  var lists, self, watchingFor;
+  lists = {};
+  watchingFor = null;
+  self = this;
   this.watchFor = function(fqn) {
-    return watchingFor = fqn;
+    watchingFor = fqn;
+    return self.addNamespace(fqn);
   };
   this.endWatch = function() {
     return watchingFor = null;
   };
   this.recordAccess = function(proxy, key) {
     if (watchingFor) {
-      return addDependency(proxy, watchingFor, key);
+      return lists[watchingFor].addDependency(proxy, key);
     }
   };
   this.addNamespace = function(namespace) {
-    var channelName;
-    channelName = namespace + "_model";
-    self[channelName] = postal.channel(channelName);
-    return self[channelName].subscribe(function(m) {
-      if (m.event === "wrote" || m.event === "added" || m.event === "removed") {
-        return checkDependencies(channelName, m.key);
-      }
-    });
+    if (lists[namespace]) {
+      lists[namespace].clear();
+    }
+    console.log("Setting up " + namespace + " for dependency manager");
+    return lists[namespace] = new DependencyList(namespace);
   };
   return self;
 };
@@ -115,6 +133,7 @@ ObjectWrapper = function(target, onEvent, namespace, addChild, removeChild) {
     return proxy.addDependencyProperty(key, observable);
   };
   this.extractAs = function(alias) {
+    proxy.unsubscribe();
     return replicant.create(proxy.original, null, alias);
   };
   this.getOriginal = function() {
@@ -123,6 +142,9 @@ ObjectWrapper = function(target, onEvent, namespace, addChild, removeChild) {
   this.isProxy = true;
   this.subscribe = function(channelName) {
     return proxy.subscribe(channelName);
+  };
+  this.unsubscribe = function() {
+    return proxy.unsubscribe();
   };
   this.getPath = function() {
     return proxy.getPath();
@@ -145,6 +167,7 @@ ArrayWrapper = function(target, onEvent, namespace, addChild, removeChild) {
     return proxy.addDependencyProperty(key, observable);
   };
   this.extractAs = function(alias) {
+    proxy.unsubscribe();
     return replicant.create(proxy.original, null, alias);
   };
   this.getOriginal = function() {
@@ -169,43 +192,22 @@ ArrayWrapper = function(target, onEvent, namespace, addChild, removeChild) {
   this.shift = function() {
     return proxy.shift();
   };
+  this.sort = function(compare) {
+    return proxy.sort(compare);
+  };
   this.subscribe = function(channelName) {
     return proxy.subscribe(channelName);
+  };
+  this.unsubscribe = function() {
+    return proxy.unsubscribe();
   };
   this.unshift = function(value) {
     return proxy.unshift(value);
   };
-  this.reverse = function() {
-    return proxy.reverse();
-  };
-  this.sort = function(fn) {
-    return proxy.sort(fn);
-  };
-  this.join = function(separator) {
-    return proxy.join(separator);
-  };
-  this.toString = function() {
-    return proxy.toString();
-  };
-  this.splice = function() {
-    return proxy.splice.apply(proxy, Array.prototype.slice.call(arguments, 0));
-  };
-  this.slice = function() {
-    return proxy.slice.apply(proxy, Array.prototype.slice.call(arguments, 0));
-  };
-  this.indexOf = function(x) {
-    return proxy.indexOf(x);
-  };
-  this.lastIndexOf = function(x) {
-    return proxy.lastIndexOf(x);
-  };
-  this.concat = function() {
-    return proxy.concat.apply(proxy, Array.prototype.slice.call(arguments, 0));
-  };
   return this;
 };
 Proxy = function(wrapper, target, onEvent, namespace, addChild, removeChild) {
-  var addChildPath, addToParent, ancestors, createMemberProxy, createProxyFor, fullPath, getLocalFqn, getLocalPath, notify, path, proxy, proxySubscription, readHook, removeChildPath, removeFromParent, self, subject, unwindAncestralDependencies, walk;
+  var addChildPath, addToParent, ancestors, createMemberProxy, createProxyFor, fullPath, getLocalFqn, getLocalPath, notify, path, proxy, readHook, removeChildPath, removeFromParent, self, subject, unwindAncestralDependencies, walk;
   self = this;
   fullPath = namespace || (namespace = "");
   addToParent = addChild || function() {};
@@ -224,7 +226,9 @@ Proxy = function(wrapper, target, onEvent, namespace, addChild, removeChild) {
   subject = target;
   ancestors = [];
   readHook = null;
-  proxySubscription = {};
+  this.proxySubscription = {
+    unsubscribe: function() {}
+  };
   addChildPath = function(lqn, child, key) {
     var fqn, isRoot, propertyName;
     isRoot = ancestors.length === 0;
@@ -247,14 +251,27 @@ Proxy = function(wrapper, target, onEvent, namespace, addChild, removeChild) {
     return addToParent(fqn, child, key);
   };
   this.subscribe = function(channelName) {
-    if (proxySubscription && proxySubscription.unsubscribe) {
-      proxySubscription.unsubscribe();
-    }
-    return proxySubscription = postal.channel(channelName).subscribe(function(m) {
+    self.unsubscribe();
+    return self.proxySubscription = postal.channel(channelName).subscribe(function(m) {
       if (m.event === "onchange") {
         return wrapper[m.id] = m.control.value;
+      } else if (wrapper[m.id] && wrapper[m.id][m.alias]) {
+        return wrapper[m.id][m.alias].apply(m.model, [
+          m.root, {
+            id: m.id,
+            control: m.control,
+            event: m.event,
+            context: m.context,
+            info: m.x
+          }
+        ]);
       }
     });
+  };
+  this.unsubscribe = function() {
+    if (self.proxySubscription) {
+      return self.proxySubscription.unsubscribe();
+    }
   };
   this.getHandler = function() {
     return onEvent;
@@ -373,7 +390,11 @@ Proxy = function(wrapper, target, onEvent, namespace, addChild, removeChild) {
   };
   this.original = subject;
   this.add = function(key, keys) {
-    this.recrawl(keys);
+    var k, _i, _len;
+    for (_i = 0, _len = keys.length; _i < _len; _i++) {
+      k = keys[_i];
+      createMemberProxy(k);
+    }
     notify(buildFqn(fullPath, "length"), "wrote", {
       value: subject.length,
       previous: -1 + subject.length
@@ -398,7 +419,11 @@ Proxy = function(wrapper, target, onEvent, namespace, addChild, removeChild) {
     }).apply(this));
   };
   this.remove = function(key, value, keys) {
-    this.recrawl(keys);
+    var k, _i, _len;
+    for (_i = 0, _len = keys.length; _i < _len; _i++) {
+      k = keys[_i];
+      createMemberProxy(k);
+    }
     notify(buildFqn(fullPath, "length"), "wrote", {
       value: subject.length,
       previous: 1 + subject.length
@@ -407,27 +432,8 @@ Proxy = function(wrapper, target, onEvent, namespace, addChild, removeChild) {
       index: subject.length,
       value: value
     });
+    console.log(wrapper);
     return value;
-  };
-  this.recrawl = function(keys) {
-    var k, _i, _len, _results;
-    _results = [];
-    for (_i = 0, _len = keys.length; _i < _len; _i++) {
-      k = keys[_i];
-      _results.push(createMemberProxy(k));
-    }
-    return _results;
-  };
-  this.genReadNotices = function(keys) {
-    var k, _i, _len, _results;
-    _results = [];
-    for (_i = 0, _len = keys.length; _i < _len; _i++) {
-      k = keys[_i];
-      _results.push(notify(buildFqn(fullPath, k), "read", {
-        value: wrapper[k]
-      }));
-    }
-    return _results;
   };
   this.pop = function() {
     var key, value;
@@ -449,165 +455,15 @@ Proxy = function(wrapper, target, onEvent, namespace, addChild, removeChild) {
       return _results;
     }).apply(this));
   };
-  this.reverse = function() {
+  this.sort = function(sorter) {
     var old;
-    old = wrapper;
-    subject.reverse();
+    old = subject;
+    subject = subject.sort(sorter);
     walk(subject);
-    return notify(fullPath, "reversed", {
-      index: subject.length,
+    return notify(fullPath, "wrote", {
       value: wrapper,
       previous: old
     });
-  };
-  this.sort = function() {
-    var old;
-    old = wrapper;
-    subject.sort.apply(subject, arguments);
-    walk(subject);
-    return notify(fullPath, "sorted", {
-      index: subject.length,
-      value: wrapper,
-      previous: old
-    });
-  };
-  this.join = function() {
-    var value, _i, _ref, _results;
-    value = subject.join.apply(subject, arguments);
-    this.genReadNotices((function() {
-      _results = [];
-      for (var _i = 0, _ref = subject.length - 1; 0 <= _ref ? _i <= _ref : _i >= _ref; 0 <= _ref ? _i++ : _i--){ _results.push(_i); }
-      return _results;
-    }).apply(this));
-    return value;
-  };
-  this.toString = function() {
-    var value, _i, _ref, _results;
-    value = subject.toString.apply(subject, arguments);
-    this.genReadNotices((function() {
-      _results = [];
-      for (var _i = 0, _ref = subject.length - 1; 0 <= _ref ? _i <= _ref : _i >= _ref; 0 <= _ref ? _i++ : _i--){ _results.push(_i); }
-      return _results;
-    }).apply(this));
-    return value;
-  };
-  this.indexOf = function(x) {
-    var i, len, value;
-    i = void 0;
-    value = -1;
-    len = void 0;
-    if (typeof x === "ObjectWrapper" || typeof x === "ArrayWrapper") {
-      len = wrapper.length;
-      while (i < len) {
-        if (wrapper[i] === x) {
-          value = i;
-          break;
-        }
-        i++;
-      }
-    } else {
-      value = subject.indexOf(x);
-    }
-    notify(buildFqn(fullPath, value), "read", {
-      index: value,
-      value: wrapper[value]
-    });
-    return value;
-  };
-  this.lastIndexOf = function(x) {
-    var i, value;
-    i = wrapper.length - 1;
-    value = -1;
-    if (typeof x === "ObjectWrapper" || typeof x === "ArrayWrapper") {
-      while (i >= 0) {
-        if (wrapper[i] === x) {
-          value = i;
-          break;
-        }
-        i--;
-      }
-    } else {
-      value = subject.indexOf(x);
-    }
-    notify(buildFqn(fullPath, value), "read", {
-      index: value,
-      value: wrapper[value]
-    });
-    return value;
-  };
-  this.splice = function() {
-    var args, chgLen, i, k, len, newItems, stIdx, subjLen, value, _ref;
-    args = Array.prototype.slice.call(arguments, 0, 2);
-    newItems = Array.prototype.slice.call(arguments, 2);
-    len = newItems.length;
-    subjLen = subject.length;
-    value = [];
-    i = 0;
-    stIdx = 0;
-    if (args[0] >= 0) {
-      stIdx = i = args[0];
-    } else {
-      stIdx = i = subject.length + args[0];
-    }
-    chgLen = args[1] + args[0];
-    while (i <= subjLen) {
-      if (i < chgLen) {
-        value.push(wrapper[i]);
-        this.remove(i, wrapper[i], []);
-      }
-      removeChildPath(i);
-      i++;
-    }
-    subject.splice.apply(subject, args.concat(newItems));
-    for (k = stIdx, _ref = subject.length - 1; stIdx <= _ref ? k <= _ref : k >= _ref; stIdx <= _ref ? k++ : k--) {
-      this.add(k, [k]);
-    }
-    return replicant.create(value, fullPath);
-  };
-  this.slice = function() {
-    var endIdx, startIdx, value;
-    startIdx = 0;
-    endIdx = subject.length;
-    value = [];
-    if (arguments[0] < 0) {
-      startIdx = subject.length + arguments[0];
-    } else {
-      startIdx = arguments[0];
-    }
-    if (arguments[1]) {
-      if (arguments[1] < 0) {
-        endIdx = subject.length + arguments[1];
-      } else {
-        endIdx = arguments[1];
-      }
-    }
-    while (startIdx < endIdx) {
-      value.push(wrapper[startIdx]);
-      startIdx++;
-    }
-    return replicant.create(value, fullPath);
-  };
-  this.concat = function() {
-    var args, i, len, value;
-    value = [];
-    args = Array.prototype.slice.call(arguments, 0);
-    i = 0;
-    len = subject.length;
-    while (i < subject.length) {
-      value.push(wrapper[i]);
-      i++;
-    }
-    i = 0;
-    _.each(args, function(arg) {
-      if (_.isArray(arg)) {
-        return _.each(arg, function(item) {
-          return value.push(item);
-        });
-      } else {
-        return value.push(arg);
-      }
-    });
-    return replicant.create(value, fullPath);
   };
   Object.defineProperty(wrapper, "length", {
     get: function() {
@@ -681,40 +537,33 @@ Replicant = function() {
     }
   });
   this.create = function(target, onevent, namespace) {
-    var channel, nmspc, onEvent, proxy;
-    onEvent = function(parent, key, event, info) {
+    var channel, onEvent, proxy;
+    if (proxies[namespace]) {
+      proxies[namespace].unsubscribe();
+    }
+    dependencyManager.addNamespace(namespace);
+    channel = postal.channel(namespace + "_model");
+    onEvent = onevent || (onevent = function(parent, key, event, info) {
       return channel.publish({
         event: event,
         parent: parent,
         key: key,
         info: info
       });
-    };
-    nmspc = "";
-    if (arguments.length === 2) {
-      if (typeof arguments[1] === "function") {
-        onEvent = onevent;
-      } else {
-        nmspc = onevent;
-      }
-    } else if (arguments.length === 3) {
-      onEvent = onevent || (onevent = onEvent);
-      nmspc = namespace;
-    }
-    dependencyManager.addNamespace(nmspc);
-    channel = postal.channel(nmspc + "_model");
+    });
+    namespace = namespace || (namespace = "");
     proxy = onProxyOf(target, function() {
-      return new ArrayWrapper(target, onEvent, nmspc);
+      return new ArrayWrapper(target, onEvent, namespace);
     }, function() {
-      return new ObjectWrapper(target, onEvent, nmspc);
+      return new ObjectWrapper(target, onEvent, namespace);
     }, function() {
       return target;
     });
     (function() {
       return target;
     });
-    proxy.subscribe(nmspc + "_events");
-    add(nmspc, proxy);
+    proxy.subscribe(namespace + "_events");
+    add(namespace, proxy);
     return proxy;
   };
   return self;

@@ -4,12 +4,13 @@ Template = (name, namespace) ->
     ###import "lists.coffee" ####
 
     conditionalCopy = ( source, target, sourceId, targetId ) ->
-      val = source[sourceId]
-      if val != undefined
-        if _.isArray(targetId)
-          ( target[x] = val ) for x in targetId
-        else
-          target[targetId] = val
+      if source and target
+          val = source[sourceId]
+          if val != undefined
+            if _.isArray(targetId)
+              ( target[x] = val ) for x in targetId
+            else
+              target[targetId] = val
 
     copyProperties = ( source, target, list ) ->
       ( conditionalCopy source, target, x, list[x] ) for x in _.keys(list)
@@ -20,18 +21,14 @@ Template = (name, namespace) ->
         tag = element.tagName.toUpperCase()
         context = context or root
 
-        
-
         if element.children != undefined and element.children.length > 0
             createChildren = ( crawl( context, root, fqn, child ) for child in element.children )
 
             call = ( html, model, parentFqn, idx ) ->
                 actualId = if id == "" then idx else id
                 myFqn = createFqn parentFqn, actualId
-                val = if actualId == fqn or actualId == undefined then model else model?[actualId]
-                #collection = if val instanceof ArrayWrapper then val else val?.items
+                val = if actualId == myFqn or actualId == undefined then model else model?[actualId]
                 collection = if val.length then val else val?.items
-                #if collection and collection instanceof ArrayWrapper
                 if collection and collection.length
                     list = []
                     childFactory = createChildren[0]
@@ -69,6 +66,8 @@ Template = (name, namespace) ->
             result = namespace
         else if namespace == undefined or namespace == ""
             result = id
+        else if namespace == id
+            result = id
         else
             result = "#{namespace}.#{id}"
         result
@@ -103,33 +102,37 @@ Template = (name, namespace) ->
       if model
         (wireup x, eventHandlers[x], model, root, fqn, element, context ) for x in _.keys(eventHandlers)
 
-    subscribe = ( context, channelName ) ->
-      if @changeSubscription and @changeSubscription.unsubscribe
-        @changeSubscription.ubsubscribe();
-      @changesSubscription = postal.channel( channelName ).subscribe (m) ->
+    handleModelEvent = (m) ->
         if m.event != "read"
-          control = context[m.key]
+          control = self[m.key]
 
           lastIndex = m.key.lastIndexOf "."
           parentKey = m.key.substring 0, lastIndex
           childKey = m.key.substring ( lastIndex + 1 )
           target = "value"
+          accessKey = m.key
 
           if childKey == "value" or not control
-              control = context[parentKey]
+              control = self[parentKey]
               target = childKey
+              accessKey = parentKey
 
           if m.event == "wrote"
-              if control
-                if m.info.value.isProxy
-                  $(context[m.key]).replaceWith context.template[m.key]( self.html, m.info.value.getRoot(), parentKey )
+              if control and self.template[accessKey] and m.info.value and m.info.value.isProxy
+                  value = if m.info.value.getRoot then m.info.value.getRoot() else m.info.value
+                  $(self[accessKey]).replaceWith self.template[accessKey]( self.html, value, parentKey )
                 else
                   conditionalCopy m.info, control, "value", modelTargets[target]
 
           else if m.event == "added"
             addName = parentKey + "_add"
-            newElement = context.template[addName]( childKey, m.parent )
-            $(context[parentKey]).append newElement
+            newElement = self.template[addName]( childKey, m.parent )
+            $(self[parentKey]).append newElement
+
+    subscribe = ( context, channelName ) ->
+      if self.changeSubscription != undefined
+        self.changeSubscription.unsubscribe()
+      self.changeSubscription = postal.channel( channelName ).subscribe handleModelEvent
 
     wireup = ( alias, event, model, root, fqn, element, context ) ->
       handler = model[alias]
@@ -147,16 +150,17 @@ Template = (name, namespace) ->
 
     @apply = (model) ->
         fn = crawl this, model, namespace, @element, @apply
+        console.log "applying to #{namespace}"
+        subscribe( self, namespace + "_model" )
         fn @html, model
-    #@element = $(target)[0]
-    #@fqn = createFqn namespace, @element["id"]
+        
     @name = name
-    @fqn = namespace
+    @namespace = namespace
+    @fqn = ""
     @element = resolver.resolve name
-    @eventChannel = postal.channel(@fqn + "_events")
+    @eventChannel = postal.channel(namespace + "_events")
     @html = DOMBuilder.dom
     @template = {}
-
-    subscribe( self, self.fqn + "_model" )
-
+    @changeSubscription = undefined
+    subscribe( self, namespace + "_model" )
     this

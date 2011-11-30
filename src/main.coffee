@@ -3,7 +3,7 @@ Cartographer = () ->
 
   postal.channel("cartographer").subscribe (m) ->
     if m.map
-      self.map m.name
+      self.map m.name, m.namespace
     else if m.apply
       self.apply m.template, m.proxy, m.render, m.error
 
