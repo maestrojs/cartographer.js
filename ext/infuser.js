@@ -1,23 +1,10 @@
-(function(global, undefined) {
+(function($, global, undefined) {
 /*
     infuser.js
     Author: Jim Cowart
     License: Dual licensed MIT (http://www.opensource.org/licenses/mit-license) & GPL (http://www.opensource.org/licenses/gpl-license)
     Version 0.1.0
 */
-var NO_OP = function() { },
-    defaultRenderOptions = {
-        preRender: NO_OP,
-        render: function(target, template) {
-            if($(target).children().length === 0) {
-                $(target).append($(template));
-            }
-            else {
-                $(target).children().replaceWith($(template));
-            }
-        },
-        postRender: NO_OP
-    };
 var hashStorage = {
     templates: {},
 
@@ -86,38 +73,6 @@ var helpers = {
         };
     }
 };
-var trafficCop = {
-
-    inProgress: {},
-
-    direct: function(reqOptions) {
-        var key = reqOptions.type + "_" + reqOptions.dataType + "_" + reqOptions.url,
-            self = this;
-        if(!self.inProgress[key]) {
-            var remove = function() {
-                    delete self.inProgress[key];
-                },
-                traffic = {
-                    successCallbacks: [reqOptions.success],
-                    errorCallbacks: [reqOptions.error],
-                    success: function(response) {
-                        $.each($(self.inProgress[key].successCallbacks), function(idx,item){ item(response); });
-                        remove();
-                    },
-                    error: function(exception) {
-                        $.each($(self.inProgress[key].errorCallbacks), function(idx,item){ item(exception); });
-                        remove();
-                    }
-                };
-            self.inProgress[key] = $.extend({}, reqOptions, traffic);
-            $.ajax(self.inProgress[key]);
-        }
-        else {
-            self.inProgress[key].successCallbacks.push(reqOptions.success);
-            self.inProgress[key].errorCallbacks.push(reqOptions.error);
-        }
-    }
-};
 var infuser = {
     storageOptions: {
         hash: hashStorage,
@@ -129,9 +84,37 @@ var infuser = {
     config: {
         templateUrl: "",
         templateSuffix: ".html",
-        templatePrefix: "",
-        renderInstruction: function(template, model) { return template; }, // NO_OP
-        domTargetResolver: function(templateId) { return "#" + templateId } // DEFAULT MAPPING
+        templatePrefix: ""
+    },
+
+    defaults: {
+        target:  function(templateId) { return "#" + templateId }, // DEFAULT MAPPING
+        loadingTemplate:    {
+                                content:        '<div class="infuser-loading">Loading...</div>',
+                                transitionIn:   function(target) {
+                                                    var self = this,
+                                                        tgt = $(target);
+                                                    tgt.hide();
+                                                    tgt.html(self.content);
+                                                    tgt.fadeIn();
+                                                },
+                                transitionOut:  function(target) {
+                                                    $(target).html("");
+                                                }
+                            },
+        postRender:         function(targetElement) { }, // NO_OP effectively by default
+        preRender:          function(targetElement, template) { }, // NO_OP effectively by default
+        render:             function(target, template) {
+                                var tgt = $(target);
+                                if(tgt.children().length === 0) {
+                                    tgt.append($(template));
+                                }
+                                else {
+                                    tgt.children().replaceWith($(template));
+                                }
+                            },
+        bindingInstruction:  function(template, model) { return template; }, // NO_OP effectively by default
+        useLoadingTemplate: true // true/false
     },
 
     get: function(templateId, callback) {
@@ -148,7 +131,7 @@ var infuser = {
                         "success": helpers.templateGetSuccess(templateId, callback),
                         "error"  : helpers.templateGetError(templateId, templatePath, callback)
                       };
-            trafficCop.direct(options);
+            $.trafficCop(options);
         }
         else {
             callback(template);
@@ -189,16 +172,22 @@ var infuser = {
     },
 
     infuse: function(templateId, renderOptions) {
-        var options = $.extend({}, defaultRenderOptions, renderOptions),
-            self = this,
-            targetElement = options.targetSelector || self.config.domTargetResolver(templateId);
+        var self = this,
+            options = $.extend({}, self.defaults, renderOptions),
+            targetElement = typeof options.target === 'function' ? options.target(templateId) : options.target;
+        if(options.useLoadingTemplate) {
+            options.loadingTemplate.transitionIn(targetElement);
+        }
         self.get(templateId, function(template) {
             var _template = template;
             options.preRender(targetElement, _template);
-            _template = self.config.renderInstruction(_template, options.model);
+            _template = options.bindingInstruction(_template, options.model);
+            if(options.useLoadingTemplate) {
+                options.loadingTemplate.transitionOut(targetElement);
+            }
             options.render(targetElement, _template);
             options.postRender(targetElement);
         });
     }
 };
-global.infuser = infuser; })(window);
+global.infuser = infuser; })(jQuery, window);

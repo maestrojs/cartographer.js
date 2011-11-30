@@ -6,6 +6,8 @@ Cartographer = () ->
       self.map m.name, m.namespace
     else if m.apply
       self.apply m.template, m.proxy, m.render, m.error
+    else if m.addSource
+      self.resolver.addSource m.provider
 
   @templates = {}
 
@@ -24,6 +26,8 @@ Cartographer = () ->
           $( '#' + templateInstance.name ).replaceWith( result )
     else if error
       error()
+
+  @resolver = resolver
 
   self
 

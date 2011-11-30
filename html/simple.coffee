@@ -67,11 +67,17 @@ BuildSteps = ( list, recipe ) ->
 
 Recipe = ( Title, Description, Ingredients, Steps ) ->
     recipe =
+        self: this
         title:
           value: Title
           hovered: false
           click: (r,x) ->
-            cartographer.apply( "recipe", this.ancestors[0].extractAs "recipe"  )
+            #cartographer.apply( "recipe", this.ancestors[0].extractAs "recipe"  )
+            cart.publish
+              apply: true
+              template: "recipe"
+              proxy: this.ancestors[0].extractAs "recipe"
+              render: (x) -> $("#recipe").replaceWith(x)
           mouseover: (r,x) ->
               @hovered = true
           mouseout: (r,y) ->
@@ -160,15 +166,27 @@ recipe2 = new Recipe(
 recipes =
   list: [ recipe1, recipe2 ]
 
+cart = postal.channel("cartographer")
+
 $( ->
+    infuser.config.templateUrl = "/tmpl"
+    infuser.config.templateSuffix = ".html"
+    infuser.get "steps", (x) -> console.log "Yay"
+
     repl = postal.channel("replicant")
     repl.publish
         create: true,
         target: recipes,
         namespace: "recipes"
 
-    cart = postal.channel("cartographer")
-
+    cart.publish
+        addSource: true
+        provider:
+            resolve: (name, success, fail) ->
+                infuser.get name,
+                    (x) -> success x,
+                    fail
+                        
     cart.publish
       map: true
       name: "recipes"
