@@ -65,8 +65,12 @@ DependencyList = function(namespace) {
     }
   };
   this.checkDependencies = function(key) {
+<<<<<<< HEAD
+    return _(dependencies).chain().select(function(x) {
+=======
     var hits;
     hits = _.select(dependencies, function(x) {
+>>>>>>> master
       return x.isHit(key);
     });
     return _.each(hits, function(x) {
@@ -86,16 +90,34 @@ DependencyList = function(namespace) {
     subscription.unsubscribe();
     return subscription = {};
   };
+<<<<<<< HEAD
+  channelName = namespace + "_model";
+  self[channelName] = postal.channel(channelName);
+  subscription = self[channelName].subscribe(function(m) {
+    if (m.event === "wrote" || m.event === "added" || m.event === "removed") {
+      return self.checkDependencies( m.key);
+=======
   channelName = fqn.split('.')[0] + "_model";
   self[channelName] = postal.channel(channelName);
   subscription = self[channelName].subscribe(function(m) {
     if (m.event === "wrote" || m.event === "added" || m.event === "removed") {
       return self.checkDependencies(m.key);
+>>>>>>> master
     }
   });
   return self;
 };
 DependencyManager = function() {
+<<<<<<< HEAD
+  var lists, self, watchRoot, watchingFor;
+  lists = {};
+  watchingFor = null;
+  watchRoot = null;
+  self = this;
+  this.watchFor = function(fqn) {
+    watchingFor = fqn;
+    return watchRoot = fqn.split('.')[0];
+=======
   var lists, self, watchingFor;
   lists = {};
   watchingFor = null;
@@ -103,20 +125,28 @@ DependencyManager = function() {
   this.watchFor = function(fqn) {
     watchingFor = fqn;
     return self.addNamespace(fqn);
+>>>>>>> master
   };
   this.endWatch = function() {
     return watchingFor = null;
   };
   this.recordAccess = function(proxy, key) {
     if (watchingFor) {
+<<<<<<< HEAD
+      return lists[watchRoot].addDependency(proxy, key);
+=======
       return lists[watchingFor].addDependency(proxy, key);
+>>>>>>> master
     }
   };
   this.addNamespace = function(namespace) {
     if (lists[namespace]) {
       lists[namespace].clear();
     }
+<<<<<<< HEAD
+=======
     console.log("Setting up " + namespace + " for dependency manager");
+>>>>>>> master
     return lists[namespace] = new DependencyList(namespace);
   };
   return self;
@@ -255,7 +285,11 @@ Proxy = function(wrapper, target, onEvent, namespace, addChild, removeChild) {
     return self.proxySubscription = postal.channel(channelName).subscribe(function(m) {
       if (m.event === "onchange") {
         return wrapper[m.id] = m.control.value;
+<<<<<<< HEAD
+      } else if (wrapper[m.id][m.alias]) {
+=======
       } else if (wrapper[m.id] && wrapper[m.id][m.alias]) {
+>>>>>>> master
         return wrapper[m.id][m.alias].apply(m.model, [
           m.root, {
             id: m.id,

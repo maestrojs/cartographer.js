@@ -80,8 +80,8 @@ Recipe = ( Title, Description, Ingredients, Steps ) ->
         description: Description
         ingredients: []
         steps:
-          __template__: "steps"
-          value: []
+            __template__: "steps"
+            value: []
 
         sort:
           value: "Sort"
@@ -188,8 +188,4 @@ $( ->
           template: "recipes"
           proxy: x
           render: (x) -> $("#recipes").replaceWith(x)
-
-    #cartographer.map( "#recipe" )
-    #cartographer.map( "#recipes > #list" )
-    #cartographer.apply( "list", list )
 )
