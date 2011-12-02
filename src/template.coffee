@@ -1,4 +1,4 @@
-Template = (name, namespace) ->
+Template = (name, namespace, target) ->
     self = this
 
     ###import "lists.coffee" ####
@@ -17,10 +17,19 @@ Template = (name, namespace) ->
 
     crawl = ( context, root, namespace, element, onDone ) ->
         tmpId = createFqn namespace, element?.id
-        if root[tmpId]?.__template__ && element && element.id && not element.nested
-          resolver.resolve root[tmpId].__template__, (x) ->
+        template = ""
+        checkResource = true
+        if tmpId != namespace and root[tmpId]?.__template__
+          template = root[tmpId].__template__
+        #else if tmpId == namespace and root.__template__
+        #  template = root.__template__
+        else
+          checkResource = false
+          template = namespace
+
+        if not element or checkResource
+          resolver.resolve template, (x) ->
             element = x
-            console.log "*** #{namespace} - #{element.id} - #{element.tagName} ***"
             element.nested = true
             onElement(context, root, namespace, element, onDone)
         else
@@ -40,7 +49,6 @@ Template = (name, namespace) ->
                 call = ( html, model, parentFqn, idx ) ->
                   actualId = if id == "" then idx else id
                   myFqn = createFqn parentFqn, actualId
-                  #val = if actualId == fqn or actualId == undefined then model else model?[actualId]
                   val = if actualId == myFqn or actualId == undefined then model else model?[actualId]
                   if val.value then val = val.value
                   collection = if val.length then val else val?.items
@@ -135,16 +143,19 @@ Template = (name, namespace) ->
               accessKey = parentKey
 
           if m.event == "wrote"
-              if control and self.template[accessKey] and m.info.value and m.info.value.isProxy
-                  value = if m.info.value.getRoot then m.info.value.getRoot() else m.info.value
-                  $(self[accessKey]).replaceWith self.template[accessKey]( self.html, value, parentKey )
-                else
-                  conditionalCopy m.info, control, "value", modelTargets[target]
+              if childKey == "__template__"
+                cartographer.apply m.info.value, m.parent
+              else if control and self.template[accessKey] and m.info.value and m.info.value.isProxy
+                value = if m.info.value.getRoot then m.info.value.getRoot() else m.info.value
+                $(self[accessKey]).replaceWith self.template[accessKey]( self.html, value, parentKey )
+              else
+                conditionalCopy m.info, control, "value", modelTargets[target]
 
           else if m.event == "added"
             addName = parentKey + "_add"
-            newElement = self.template[addName]( childKey, m.parent )
-            $(self[parentKey]).append newElement
+            if self.template[addName]
+              newElement = self.template[addName]( childKey, m.parent )
+              $(self[parentKey]).append newElement
 
     subscribe = ( context, channelName ) ->
       if self.changeSubscription != undefined
@@ -171,11 +182,13 @@ Template = (name, namespace) ->
     @name = name
     @namespace = namespace
     @fqn = ""
-    @element = {}
+    @element = undefined
     @eventChannel = postal.channel(namespace + "_events")
     @html = DOMBuilder.dom
     @template = {}
     @changeSubscription = undefined
+    @target = target or= namespace
+
     resolver.resolve name, (x) ->
       self.element = x
     subscribe( self, namespace + "_model" )

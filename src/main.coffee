@@ -11,21 +11,23 @@ Cartographer = () ->
 
   @templates = {}
 
-  @map = ( name, namespace ) ->
-    template = new Template name, namespace
-    @templates[name] = template
+  @map = ( name, namespace, target ) ->
+    template = new Template name, namespace, target
+    self.templates[name] = template
 
   @apply = ( template, proxy, render, error ) ->
     template = template or= proxy.__template__
-    templateInstance = @templates[template]
+    templateInstance = self.templates[template]
     if templateInstance
       templateInstance.apply proxy, (result) ->
         if render
-          render( result, templateInstance.fqn )
+          render( result, templateInstance.target, templateInstance.fqn )
         else
-          $( '#' + templateInstance.name ).replaceWith( result )
-    else if error
-      error()
+          $( '#'+templateInstance.target ).fadeOut 200, ->
+            $(this).html(result).fadeIn(300)
+    else
+      self.map template, proxy.getPath()
+      self.apply template, proxy
 
   @resolver = resolver
 

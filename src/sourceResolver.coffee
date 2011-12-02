@@ -4,11 +4,11 @@ SourceResolver = () ->
 
   checkPage = (name) ->
     templateElement = $( '#' + name + '-template > :only-child' )
-    defaultElement = $( '#' + name )
+    #defaultElement = $( '#' + name )
     if templateElement.length > 0
       templateElement[0]
-    else if defaultElement.length > 0 and defaultElement[0].children.length > 1
-      defaultElement[0]
+    #else if defaultElement.length > 0 and defaultElement[0].children.length > 1
+    #  defaultElement[0]
     else
       null
 
@@ -26,6 +26,13 @@ SourceResolver = () ->
           index++
           finder()
       finder()
+
+  if infuser
+    self.addSource
+        resolve: (name, success, fail) ->
+            infuser.get name,
+                (x) -> success x,
+                fail
 
   self
 

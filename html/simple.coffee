@@ -72,17 +72,16 @@ Recipe = ( Title, Description, Ingredients, Steps ) ->
           value: Title
           hovered: false
           click: (r,x) ->
-            #cartographer.apply( "recipe", this.ancestors[0].extractAs "recipe"  )
             cart.publish
               apply: true
               template: "recipe"
               proxy: this.ancestors[0].extractAs "recipe"
-              render: (x) -> $("#recipe").replaceWith(x)
           mouseover: (r,x) ->
               @hovered = true
           mouseout: (r,y) ->
               @hovered = false
 
+        __template__: "recipe"
         description: Description
         ingredients: []
         steps:
@@ -95,6 +94,11 @@ Recipe = ( Title, Description, Ingredients, Steps ) ->
             this.ancestors[0].ingredients.sort( (x,y) ->
               if x.display.item < y.display.item then -1 else 1
             )
+
+        swap:
+          value: "Swap"
+          click: (root) ->
+            root.__template__ = if root.__template__ == "recipe" then "alt-recipe" else "recipe"
 
         dumpus:
           click: (root) ->
@@ -119,6 +123,8 @@ Recipe = ( Title, Description, Ingredients, Steps ) ->
                 this.ancestors[0].quantity = ""
 
           __dependencies__:
+            ingredientCount: (x) ->
+              x.ingredients.length
             stuff: (x) ->
               items = _.pluck(x.ingredients, 'display.item')
               "Item list: #{items.toString()}"
@@ -171,7 +177,6 @@ cart = postal.channel("cartographer")
 $( ->
     infuser.config.templateUrl = "/tmpl"
     infuser.config.templateSuffix = ".html"
-    infuser.get "steps", (x) -> console.log "Yay"
 
     repl = postal.channel("replicant")
     repl.publish
@@ -179,14 +184,6 @@ $( ->
         target: recipes,
         namespace: "recipes"
 
-    cart.publish
-        addSource: true
-        provider:
-            resolve: (name, success, fail) ->
-                infuser.get name,
-                    (x) -> success x,
-                    fail
-                        
     cart.publish
       map: true
       name: "recipes"
@@ -197,6 +194,11 @@ $( ->
       name: "recipe"
       namespace: "recipe"
 
+    cart.publish
+      map: true
+      name: "alt-recipe"
+      namespace: "recipe"
+
     repl.publish
       get: true
       name: "recipes"
@@ -205,5 +207,4 @@ $( ->
           apply: true
           template: "recipes"
           proxy: x
-          render: (x) -> $("#recipes").replaceWith(x)
 )

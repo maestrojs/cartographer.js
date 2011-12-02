@@ -116,7 +116,6 @@ DependencyManager = function() {
     if (lists[namespace]) {
       lists[namespace].clear();
     }
-    console.log("Setting up " + namespace + " for dependency manager");
     return lists[namespace] = new DependencyList(namespace);
   };
   return self;
@@ -316,17 +315,19 @@ Proxy = function(wrapper, target, onEvent, namespace, addChild, removeChild) {
   createProxyFor = function(writing, fqn, key) {
     var value;
     value = subject[key];
-    value = value.getOriginal ? value.getOriginal() : value;
-    if (writing || proxy[key] === void 0) {
-      proxy[key] = onProxyOf(value, function() {
-        return new ArrayWrapper(value, onEvent, fqn, addChildPath, removeChildPath);
-      }, function() {
-        return new ObjectWrapper(value, onEvent, fqn, addChildPath, removeChildPath);
-      }, function() {
-        return value;
-      });
+    if (value) {
+      value = value.getOriginal ? value.getOriginal() : value;
+      if (writing || proxy[key] === void 0) {
+        proxy[key] = onProxyOf(value, function() {
+          return new ArrayWrapper(value, onEvent, fqn, addChildPath, removeChildPath);
+        }, function() {
+          return new ObjectWrapper(value, onEvent, fqn, addChildPath, removeChildPath);
+        }, function() {
+          return value;
+        });
+      }
+      return proxy[key];
     }
-    return proxy[key];
   };
   getLocalFqn = function(fqn) {
     var base, parts, result;
@@ -432,7 +433,6 @@ Proxy = function(wrapper, target, onEvent, namespace, addChild, removeChild) {
       index: subject.length,
       value: value
     });
-    console.log(wrapper);
     return value;
   };
   this.pop = function() {
