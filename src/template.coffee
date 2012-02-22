@@ -4,28 +4,28 @@ Template = (name, namespace, target) ->
     ###import "lists.coffee" ####
 
     conditionalCopy = ( source, target, sourceId, targetId ) ->
-      if source and target
-          val = source[sourceId]
-          if val != undefined
-            if _.isArray(targetId)
-              ( target[x] = val ) for x in targetId
-            else
-              target[targetId] = val
+        if _.isArray(targetId)
+          ( target[x] = source[sourceId] || target[x] ) for x in targetId
+        else
+          target[targetId] = source[sourceId] || target[targetId]
 
     copyProperties = ( source, target, list ) ->
-      ( conditionalCopy source, target, x, list[x] ) for x in _.keys(list)
+      if source and target
+        ( conditionalCopy source, target, x, list[x] ) for x in _.keys(list)
 
     crawl = ( context, root, namespace, element, onDone ) ->
-        tmpId = createFqn namespace, element?.id
+        elementId = element?.id
+        tmpId = createFqn namespace, elementId
         template = ""
         checkResource = true
-        if tmpId != namespace and root[tmpId]?.__template__
+
+        if not element
+          template = self.name
+        else if tmpId != namespace and root[tmpId]?.__template__
           template = root[tmpId].__template__
-        #else if tmpId == namespace and root.__template__
-        #  template = root.__template__
+          checkResource = true
         else
           checkResource = false
-          template = namespace
 
         if not element or checkResource
           resolver.resolve template, (x) ->
@@ -37,7 +37,7 @@ Template = (name, namespace, target) ->
 
     onElement = ( context, root, namespace, element, onDone ) ->
           id = element["id"]
-          fqn = createFqn namespace, id
+          fqn = createFqn2 namespace, id
           tag = element.tagName.toUpperCase()
           context = context or root
 
@@ -48,10 +48,10 @@ Template = (name, namespace, target) ->
               if createChildren.length == element.children.length
                 call = ( html, model, parentFqn, idx ) ->
                   actualId = if id == "" then idx else id
-                  myFqn = createFqn parentFqn, actualId
+                  myFqn = createFqn2 parentFqn, actualId
                   val = if actualId == myFqn or actualId == undefined then model else model?[actualId]
-                  if val.value then val = val.value
-                  collection = if val.length then val else val?.items
+                  if val?.value then val = val.value
+                  collection = if val?.length then val else val?.items
                   if collection and collection.length
                       list = []
                       childFactory = createChildren[0]
@@ -87,14 +87,18 @@ Template = (name, namespace, target) ->
             onDone call
 
     createFqn = ( namespace, id ) ->
-        if id == undefined or id == ""
-            result = namespace
-        else if namespace == undefined or namespace == ""
-            result = id
-        else if namespace == id
-            result = id
-        else
-            result = "#{namespace}.#{id}"
+        x = namespace || ""
+        y = id || ""
+        x = if x == self.name then "" else x
+        z = if x != "" and y != "" then "." else ""
+        result = "#{x}#{z}#{y}"
+        result
+
+    createFqn2 = ( namespace, id ) ->
+        x = namespace || ""
+        y = id || ""
+        z = if x != "" and y != "" then "." else ""
+        result = "#{x}#{z}#{y}"
         result
 
     makeTag = ( context, html, tag, template, myFqn, id, val, root, model ) ->
@@ -102,6 +106,7 @@ Template = (name, namespace, target) ->
         templateSource = if template.textContent then template.textContent else template.value
         content = if val then val else templateSource
         element = {}
+
         if id or id == 0
             properties.id = id
 
@@ -120,76 +125,80 @@ Template = (name, namespace, target) ->
             copyProperties model[id], element, modelTargetsForCollections
           else
             copyProperties model[id], element, modelTargets
-        setupEvents( model?[id], root, myFqn, element, context )
+        #setupEvents( model?[id], root, myFqn, element, context )
         element
 
-    setupEvents = ( model, root, fqn, element, context ) ->
-      if model
-        (wireup x, eventHandlers[x], model, root, fqn, element, context ) for x in _.keys(eventHandlers)
-
-    handleModelEvent = (m) ->
-        if m.event != "read"
-          control = self[m.key]
-
-          lastIndex = m.key.lastIndexOf "."
-          parentKey = m.key.substring 0, lastIndex
-          childKey = m.key.substring ( lastIndex + 1 )
-          target = "value"
-          accessKey = m.key
-
-          if childKey == "value" or not control
-              control = self[parentKey]
-              target = childKey
-              accessKey = parentKey
-
-          if m.event == "wrote"
-              if childKey == "__template__"
-                cartographer.apply m.info.value, m.parent
-              else if control and self.template[accessKey] and m.info.value and m.info.value.isProxy
-                value = if m.info.value.getRoot then m.info.value.getRoot() else m.info.value
-                $(self[accessKey]).replaceWith self.template[accessKey]( self.html, value, parentKey )
-              else
-                conditionalCopy m.info, control, "value", modelTargets[target]
-
-          else if m.event == "added"
-            addName = parentKey + "_add"
-            if self.template[addName]
-              newElement = self.template[addName]( childKey, m.parent )
-              $(self[parentKey]).append newElement
-
-    subscribe = ( context, channelName ) ->
-      if self.changeSubscription != undefined
-        self.changeSubscription.unsubscribe()
-      self.changeSubscription = postal.channel( channelName ).subscribe handleModelEvent
-
-    wireup = ( alias, event, model, root, fqn, element, context ) ->
-      handler = model[alias]
-      if handler
-        handlerProxy = (x) -> handler.apply(
-          model,
-          [root, { id: fqn, control: context[fqn], event: event, context: context, info: x } ]
-        )
-        element[event] = handlerProxy
-      else
-        element[event] = (x) ->
-            if event == "onchange"
-                x.stopPropagation()
-            context.eventChannel.publish( { id: fqn, model: model, control: context[fqn], event: event, context: context, info: x } )
-
     @apply = (model, onResult) ->
-        crawl self, model, namespace, self.element, (x) ->
+        crawl self, model, "", self.element, (x) ->
           onResult x( self.html, model )
+
     @name = name
-    @namespace = namespace
+    @namespace = ""
     @fqn = ""
     @element = undefined
     @eventChannel = postal.channel(namespace + "_events")
     @html = DOMBuilder.dom
     @template = {}
     @changeSubscription = undefined
-    @target = target or= namespace
+    @target = target or= name
 
     resolver.resolve name, (x) ->
       self.element = x
-    subscribe( self, namespace + "_model" )
+    #subscribe( self, namespace + "_model" )
     self
+
+
+turlet = () ->
+
+  handleModelEvent = (m) ->
+    if m.event != "read"
+      control = self[m.key]
+
+      lastIndex = m.key.lastIndexOf "."
+      parentKey = m.key.substring 0, lastIndex
+      childKey = m.key.substring ( lastIndex + 1 )
+      target = "value"
+      accessKey = m.key
+
+      if childKey == "value" or not control
+        control = self[parentKey]
+        target = childKey
+        accessKey = parentKey
+
+      if m.event == "wrote"
+        if childKey == "__template__"
+          cartographer.apply m.info.value, m.parent
+        else if control and self.template[accessKey] and m.info.value and m.info.value.isProxy
+          value = if m.info.value.getRoot then m.info.value.getRoot() else m.info.value
+          $(self[accessKey]).replaceWith self.template[accessKey]( self.html, value, parentKey )
+        else if m.info and control
+          conditionalCopy m.info, control, "value", modelTargets[target]
+
+      else if m.event == "added"
+        addName = parentKey + "_add"
+        if self.template[addName]
+          newElement = self.template[addName]( childKey, m.parent )
+          $(self[parentKey]).append newElement
+
+  setupEvents = ( model, root, fqn, element, context ) ->
+    if model
+      (wireup x, eventHandlers[x], model, root, fqn, element, context ) for x in _.keys(eventHandlers)
+
+  subscribe = ( context, channelName ) ->
+    if self.changeSubscription != undefined
+      self.changeSubscription.unsubscribe()
+    self.changeSubscription = postal.channel( channelName ).subscribe handleModelEvent
+
+  wireup = ( alias, event, model, root, fqn, element, context ) ->
+    handler = model[alias]
+    if handler
+      handlerProxy = (x) -> handler.apply(
+        model,
+        [root, { id: fqn, control: context[fqn], event: event, context: context, info: x } ]
+      )
+      element[event] = handlerProxy
+    else
+      element[event] = (x) ->
+        if event == "onchange"
+          x.stopPropagation()
+        context.eventChannel.publish( { id: fqn, model: model, control: context[fqn], event: event, context: context, info: x } )

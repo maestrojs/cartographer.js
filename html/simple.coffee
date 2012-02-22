@@ -1,63 +1,13 @@
 dom = undefined
 
 Ingredient = ( item, qty ) ->
-
-    hovered: false
-    click: (r,x) -> JSON.stringify console.log.info
-    mouseover: (r,x) ->
-        @display.showbtn.hide = false
-        x.control.className = "ingredient highlight"
-        this.display.showbtn.class = "button inline-block"
-        @hovered = true
-    mouseout: (r,y) ->
-        @hovered = false
-        window.setTimeout ((x) ->
-            if not x.hovered
-                x.display.showbtn.hide = true
-                x.display.showbtn.class = "button"
-                y.control.className = "ingredient"
-            )
-            , 100
-            , this
-    display:
-        hide: false
-        item: item
-        qty: qty
-        showbtn:
-            class: "button"
-            hide: true
-            click: (p, x) ->
-                editor = this.ancestors[1].edit
-                display = this.ancestors[0]
-                display.hide = true
-                editor.hide = false
-    edit:
-        item: item
-        qty: qty
-        okbtn:
-            value: "ok"
-            click: (p, x) ->
-                editor = this.ancestors[0]
-                display = this.ancestors[1].display
-                editor.hide = true
-                display.hide = false
-                display.item = editor.item
-                display.qty = editor.qty
-        cancelbtn:
-            value: "cancel"
-            click: (p, x) ->
-                editor = this.ancestors[0]
-                display = this.ancestors[1].display
-                editor.hide = true
-                display.hide = false
-        hide: true
+    item: item
+    qty: qty
 
 
 Step = ( step, detail ) ->
-    {
-        step: step
-        detail: detail
-    }
+    step: step
+    detail: detail
 
 BuildIngredientList = ( list, recipe ) ->
     recipe.ingredients.push( new Ingredient( x[0],x[1] ) ) for x in list
@@ -67,67 +17,13 @@ BuildSteps = ( list, recipe ) ->
 
 Recipe = ( Title, Description, Ingredients, Steps ) ->
     recipe =
-        self: this
-        title:
-          value: Title
-          hovered: false
-          click: (r,x) ->
-            cart.publish
-              apply: true
-              template: "recipe"
-              proxy: this.ancestors[0].extractAs "recipe"
-          mouseover: (r,x) ->
-              @hovered = true
-          mouseout: (r,y) ->
-              @hovered = false
-
+        title: Title
         __template__: "recipe"
         description: Description
         ingredients: []
         steps:
-            __template__: "steps"
-            value: []
-
-        sort:
-          value: "Sort"
-          click: () ->
-            this.ancestors[0].ingredients.sort( (x,y) ->
-              if x.display.item < y.display.item then -1 else 1
-            )
-
-        swap:
-          value: "Swap"
-          click: (root) ->
-            root.__template__ = if root.__template__ == "recipe" then "alt-recipe" else "recipe"
-
-        dumpus:
-          click: (root) ->
-            console.log JSON.stringify(root)
-          value: "Click for view model state"
-
-        newIngredient:
-            quantity:
-                value: ""
-                click: (x, y) -> y.control.select()
-            item:
-                value: ""
-                click: (x, y) -> y.control.select()
-            btn:
-              click: (root) ->
-                list = root.ingredients
-                newItem = root.newIngredient
-                list.push(
-                    new Ingredient newItem.item, newItem.quantity
-                  )
-                this.ancestors[0].item = ""
-                this.ancestors[0].quantity = ""
-
-          __dependencies__:
-            ingredientCount: (x) ->
-              x.ingredients.length
-            stuff: (x) ->
-              items = _.pluck(x.ingredients, 'display.item')
-              "Item list: #{items.toString()}"
+          __template__: "steps"
+          value: []
 
     BuildIngredientList( Ingredients, recipe )
     BuildSteps( Steps, recipe )
@@ -178,11 +74,11 @@ $( ->
     infuser.config.templateUrl = "/tmpl"
     infuser.config.templateSuffix = ".html"
 
-    repl = postal.channel("replicant")
+    ###repl = postal.channel("replicant")
     repl.publish
         create: true,
         target: recipes,
-        namespace: "recipes"
+        namespace: "recipes"###
 
     cart.publish
       map: true
@@ -199,12 +95,13 @@ $( ->
       name: "alt-recipe"
       namespace: "recipe"
 
-    repl.publish
-      get: true
-      name: "recipes"
-      callback: (x) ->
-        cart.publish
-          apply: true
-          template: "recipes"
-          proxy: x
+    cart.publish
+      apply: true
+      template: "recipes"
+      proxy: recipes
+
+    cart.publish
+      apply: true
+      template: "recipe"
+      proxy: recipe1
 )

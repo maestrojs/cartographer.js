@@ -8,5 +8,8 @@
     "wrap":{
         "prefix": "(function(context) {",
         "suffix": "})(window);"
+    },
+    "hosts": {
+        "/": "./html"
     }
 }
