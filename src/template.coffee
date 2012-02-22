@@ -15,7 +15,7 @@ Template = (name, namespace, target) ->
 
     crawl = ( context, root, namespace, element, onDone ) ->
         elementId = element?.id
-        tmpId = createFqn namespace, elementId
+        tmpId = createFqn namespace, elementId, true
         template = ""
         checkResource = true
 
@@ -37,7 +37,7 @@ Template = (name, namespace, target) ->
 
     onElement = ( context, root, namespace, element, onDone ) ->
           id = element["id"]
-          fqn = createFqn2 namespace, id
+          fqn = createFqn namespace, id
           tag = element.tagName.toUpperCase()
           context = context or root
 
@@ -48,7 +48,7 @@ Template = (name, namespace, target) ->
               if createChildren.length == element.children.length
                 call = ( html, model, parentFqn, idx ) ->
                   actualId = if id == "" then idx else id
-                  myFqn = createFqn2 parentFqn, actualId
+                  myFqn = createFqn parentFqn, actualId
                   val = if actualId == myFqn or actualId == undefined then model else model?[actualId]
                   if val?.value then val = val.value
                   collection = if val?.length then val else val?.items
@@ -77,7 +77,7 @@ Template = (name, namespace, target) ->
           else
             call = ( html, model, parentFqn, idx ) ->
                 actualId = if id == "" then idx else id
-                myFqn = createFqn parentFqn, actualId
+                myFqn = createFqn parentFqn, actualId, true
                 val = if actualId == fqn then model else model?[actualId]
                 childElement = makeTag( context, html, tag, element, myFqn, actualId, val, root, model )
                 context[myFqn] = childElement
@@ -86,19 +86,13 @@ Template = (name, namespace, target) ->
             context.template[fqn] = call
             onDone call
 
-    createFqn = ( namespace, id ) ->
-        x = namespace || ""
-        y = id || ""
-        x = if x == self.name then "" else x
-        z = if x != "" and y != "" then "." else ""
-        result = "#{x}#{z}#{y}"
-        result
-
-    createFqn2 = ( namespace, id ) ->
-        x = namespace || ""
-        y = id || ""
-        z = if x != "" and y != "" then "." else ""
-        result = "#{x}#{z}#{y}"
+    createFqn = ( namespace, id, filterName ) ->
+        newNs = namespace || ""
+        if filterName
+          newNs = if newNs == self.name then "" else newNs
+        newId = id || ""
+        delimiter = if newNs != "" and newId != "" then "." else ""
+        result = "#{newNs}#{delimiter}#{newId}"
         result
 
     makeTag = ( context, html, tag, template, myFqn, id, val, root, model ) ->
