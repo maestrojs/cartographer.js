@@ -1,108 +1,123 @@
-Template = (name, namespace, target) ->
+Template = (id, name, model) ->
   self = this
 
-  ###import "lists.coffee" ####
-
-  conditionalCopy = ( source, target, sourceId, targetId ) ->
-    if _.isArray(targetId)
-      ( target[x] = source[sourceId] || target[x] ) for x in targetId
+  crawl = ( model, namespace, element, onDone ) ->
+    elementId = element?.attributes[configuration.elementIdentifier]?.value || ""
+    modelId = createFqn namespace, elementId, self.name, true
+    missingElement = not element
+    template = externalTemplate(model, elementId) || self.name
+    if ( not isCurrent(modelId, namespace) and externalTemplate(model, elementId) ) or missingElement
+      resolver.resolve(
+        template,
+        (x) ->
+          x.nested = true
+          onElement(model, namespace, x, onDone)
+        ,
+        () ->
+          console.log "No template could be found for #{template}"
+      )
     else
-      target[targetId] = source[sourceId] || target[targetId]
+      onElement(model, namespace, element, onDone)
 
-  copyProperties = ( source, target, list ) ->
-    if source and target
-      ( conditionalCopy source, target, x, list[x] ) for x in _.keys(list)
-
-  crawl = ( context, root, namespace, element, onDone ) ->
-    elementId = element?.id
-    tmpId = createFqn namespace, elementId, true
-    template = ""
-    checkResource = true
-
+  onElement = ( model, namespace, element, onDone ) ->
+    #guards
     if not element
-      template = self.name
-    else if tmpId != namespace and root[tmpId]?.__template__
-      template = root[tmpId].__template__
-      checkResource = true
-    else
-      checkResource = false
+      console.log "ELEMENT IS NULL AND SHOULDN'T BE!!!!!!"
 
-    if not element or checkResource
-      resolver.resolve template, (x) ->
-        element = x
-        element.nested = true
-        onElement(context, root, namespace, element, onDone)
-    else
-      onElement(context, root, namespace, element, onDone)
-
-  onElement = ( context, root, namespace, element, onDone ) ->
-    id = element["id"]
-    fqn = createFqn namespace, id
+    # get the element id, namespace and tag
+    elementId = element?.attributes[configuration.elementIdentifier]?.value || ""
+    fqn = createFqn namespace, elementId, false, self.name
     tag = element.tagName.toUpperCase()
-    context = context or root
 
-    if element.children != undefined and element.children.length > 0
-      createChildren = []
-      onCall = (x) ->
-        createChildren.push x
-        if createChildren.length == element.children.length
-          call = ( html, model, parentFqn, idx ) ->
-            actualId = if id == "" then idx else id
-            myFqn = createFqn parentFqn, actualId
-            val = if actualId == myFqn or actualId == undefined then model else model?[actualId]
+    # if this element has a child collection, then we need to traverse it
+    # this creates a function that will get called for each of this element's
+    # children and stores the function in a collection
+    childrenCount = element.children?.length
+    if childrenCount > 0
+      childrenToCreate = []
+      onChildElement = (child) ->
+        #add element to child collection
+        childrenToCreate.push child
+
+        # is this the last child element?
+        if childrenToCreate.length == childrenCount
+
+          #create closure around element creation
+          createElement = ( elementModel, modelFqn, idx ) ->
+            newId = if elementId == "" then idx else elementId
+            newFqn = createFqn modelFqn, newId, false, self.name
+
+            # a resilient approach to inferring what value to use
+            # if we're on a 'leaf' in the model's tree, use the model as the value
+            # otherwise try to access the model's property
+            val = if newId == newFqn or newId == undefined then elementModel else elementModel[newId]
+
+            # if the current node has a .value property, use that as the value instead
             if val?.value then val = val.value
+
+            # if the current value is a collection
             collection = if val?.length then val else val?.items
             if collection and collection.length
               list = []
-              childFactory = createChildren[0]
-              context.template[myFqn + "_add"] = ( newIndex, newModel ) ->
-                childFactory( html, newModel, myFqn, newIndex )
+              childFactory = childrenToCreate[0]
 
+              # create a method for adding new elements to this template collection
+              self.template[newFqn + "_add"] = ( newIndex, newModel ) ->
+                childFactory( newModel, newFqn, newIndex )
+
+              # create a list of element factories for each child in the model's
+              # collection
               for indx in [0..collection.length-1]
-                list.push ( call( html, collection, myFqn, indx ) for call in createChildren )
+                list.push ( factory( collection, newFqn, indx ) for factory in childrenToCreate )
 
-              childElement = makeTag( context, html, tag, element, myFqn, actualId, list, root, model )
-              context[myFqn] = childElement
+              # get method for creating DOM element, store and return it
+              childElement = makeTag( tag, element, newFqn, newId, list, model, elementModel )
+              self[newFqn] = childElement
               childElement
             else
-              controls = ( call( html, val, myFqn ) for call in createChildren )
-              childElement = makeTag( context, html, tag, element, myFqn, actualId, controls, root, model )
-              context[myFqn] = childElement
+              controls = ( createElement( self.html, val, newFqn ) for createElement in childrenToCreate )
+
+              # get method for creating DOM element, store and return it
+              childElement = makeTag( tag, element, newFqn, newId, controls, model, elementModel )
+              self[newFqn] = childElement
               childElement
 
-          context.template[fqn] = call
-          onDone call
+          # store the template creation method
+          self.template[fqn] = createElement
+          onDone createElement
 
-      ( crawl( context, root, fqn, child, (x) -> onCall x ) for child in element.children )
+      # now that we have a collection of functions to call for each child,
+      # time to traverse the list and make the calls
+      ( crawl( model, fqn, child, (x) -> onChildElement x ) for child in element.children )
     else
-      call = ( html, model, parentFqn, idx ) ->
-        actualId = if id == "" then idx else id
-        myFqn = createFqn parentFqn, actualId, true
-        val = if actualId == fqn then model else model?[actualId]
-        childElement = makeTag( context, html, tag, element, myFqn, actualId, val, root, model )
-        context[myFqn] = childElement
+      createElement = ( elementModel, modelFqn, idx ) ->
+        newId = if elementId == "" then idx else elementId
+        newFqn = createFqn modelFqn, newId, true, self.name
+
+        # a resilient approach to inferring what value to use
+        # if we're on a 'leaf' in the model's tree, use the model as the value
+        # otherwise try to access the model's property
+        val = if newId == newFqn or newId == undefined then elementModel else elementModel[newId]
+
+        # if the current node has a .value property, use that as the value instead
+        if val?.value then val = val.value
+
+        # get method for creating DOM element, store and return it
+        childElement = makeTag( tag, element, newFqn, newId, val, model, elementModel )
+        self[newFqn] = childElement
         childElement
 
-      context.template[fqn] = call
-      onDone call
+      self.template[fqn] = createElement
+      onDone createElement
 
-  createFqn = ( namespace, id, filterName ) ->
-    newNs = namespace || ""
-    if filterName
-      newNs = if newNs == self.name then "" else newNs
-    newId = id || ""
-    delimiter = if newNs != "" and newId != "" then "." else ""
-    result = "#{newNs}#{delimiter}#{newId}"
-    result
-
-  makeTag = ( context, html, tag, template, myFqn, id, val, root, model ) ->
+  makeTag = (tag, template, fqn, id, val, root, model ) ->
     properties = {}
     templateSource = if template.textContent then template.textContent else template.value
     content = if val then val else templateSource
     element = {}
 
     if id or id == 0
-      properties.id = id
+      properties[configuration.elementIdentifier] = id
 
     if template
       copyProperties template, properties, templateProperties
@@ -110,89 +125,112 @@ Template = (name, namespace, target) ->
     if tag == "INPUT"
       if not _.isObject content
         properties.value = content
-      element = html[tag]( properties )
+      element = self.html[tag]( properties )
     else
-      element = html[tag]( properties, content )
+      element = self.html[tag]( properties, content )
 
     if model?[id]
       if val instanceof Array
         copyProperties model[id], element, modelTargetsForCollections
       else
         copyProperties model[id], element, modelTargets
-    #setupEvents( model?[id], root, myFqn, element, context )
     element
 
-  @apply = (model, onResult) ->
-    crawl self, model, "", self.element, (x) ->
-      onResult x( self.html, model )
+  handleTemplateChange = (message) ->
+      control = self[message.key]
+      op = message.operation
 
-  @name = name
-  @namespace = ""
-  @fqn = ""
-  @element = undefined
-  @eventChannel = postal.channel(namespace + "_events")
-  @html = DOMBuilder.dom
-  @template = {}
-  @changeSubscription = undefined
-  @target = target or= name
+      lastIndex = message.key.lastIndexOf "."
+      parentKey = message.key.substring 0, lastIndex
+      childKey = message.key.substring ( lastIndex + 1 )
 
-  resolver.resolve name, (x) ->
-    self.element = x
-  #subscribe( self, namespace + "_model" )
-  self
-
-
-turlet = () ->
-
-  handleModelEvent = (m) ->
-    if m.event != "read"
-      control = self[m.key]
-
-      lastIndex = m.key.lastIndexOf "."
-      parentKey = m.key.substring 0, lastIndex
-      childKey = m.key.substring ( lastIndex + 1 )
-      target = "value"
-      accessKey = m.key
-
-      if childKey == "value" or not control
-        control = self[parentKey]
-        target = childKey
-        accessKey = parentKey
-
-      if m.event == "wrote"
-        if childKey == "__template__"
-          cartographer.apply m.info.value, m.parent
-        else if control and self.template[accessKey] and m.info.value and m.info.value.isProxy
-          value = if m.info.value.getRoot then m.info.value.getRoot() else m.info.value
-          $(self[accessKey]).replaceWith self.template[accessKey]( self.html, value, parentKey )
-        else if m.info and control
-          conditionalCopy m.info, control, "value", modelTargets[target]
-
-      else if m.event == "added"
+      if op == "add"
         addName = parentKey + "_add"
         if self.template[addName]
-          newElement = self.template[addName]( childKey, m.parent )
-          $(self[parentKey]).append newElement
+          newElement = self.template[addName](
+            message.value,
+            parentKey,
+            childKey )
+          postal.publish(
+              "cartographer",
+              "markup.added",
+              {
+                operation: "added",
+                parent: parentKey,
+                element: newElement
+              }
+          )
+          #$(self[parentKey]).append newElement
+      else if op = "change"
+        self.template[message.key](
+          message.value,
+          parentKey,
+          childKey,
+          (x) -> postal.publish(
+            "cartographer",
+            "markup.created",
+            {
+              operation: "created",
+              parent: parentKey,
+              element: x
+            }
+          )
+        )
 
-  setupEvents = ( model, root, fqn, element, context ) ->
-    if model
-      (wireup x, eventHandlers[x], model, root, fqn, element, context ) for x in _.keys(eventHandlers)
-
-  subscribe = ( context, channelName ) ->
+  subscribe = ( ) ->
     if self.changeSubscription != undefined
       self.changeSubscription.unsubscribe()
-    self.changeSubscription = postal.channel( channelName ).subscribe handleModelEvent
+    self.changeSubscription = postal.subscribe(
+      "cartographer",
+      "template." + self.id + ".*",
+      handleTemplateChange
+    )
 
-  wireup = ( alias, event, model, root, fqn, element, context ) ->
-    handler = model[alias]
-    if handler
-      handlerProxy = (x) -> handler.apply(
-        model,
-        [root, { id: fqn, control: context[fqn], event: event, context: context, info: x } ]
+
+
+  wireUp = () ->
+    (self.watchEvent x) for x in self.watching
+
+  @apply = (model, onResult) ->
+    crawl model, "", self.element, (x) ->
+      self.top = x( self.html, model )
+      wireUp()
+      onResult self.top
+
+  @watchEvent = (eventName) ->
+    self.top.on eventName, (ev) ->
+      topic =
+        self.id + '.' +
+        ev.target.attributes[configuration.elementIdentifier]?.value + '.' +
+        ev.type
+      postal.publish(
+        "cartographer",
+        topic,
+        ev.target
       )
-      element[event] = handlerProxy
-    else
-      element[event] = (x) ->
-        if event == "onchange"
-          x.stopPropagation()
-        context.eventChannel.publish( { id: fqn, model: model, control: context[fqn], event: event, context: context, info: x } )
+    self.watching = _.uniq( self.watching.push eventName )
+
+
+  @ignoreEvent = (eventName) ->
+    self.top.off eventname
+    self.watching = _.reject( self.watching, (x) -> x == eventName )
+
+  @name = name
+  @id = id
+  @fqn = ""
+  @element = undefined
+  @html = DOMBuilder.dom
+  @template = {}
+  @top = undefined
+  @changeSubscription = undefined
+  @watching = []
+
+  resolver.resolve(
+      name,
+      (x) ->
+        self.element = x
+      ,() ->
+        console.log "No template could be found for #{name}"
+  )
+  subscribe( )
+  self

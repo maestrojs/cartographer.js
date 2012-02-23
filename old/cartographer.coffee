@@ -5,9 +5,8 @@
   Version: 0.1.0
 ###
 
-define ['postal', 'infuser', 'DOMBuilder'], (postal, infuser) ->
+define ['postal', 'infuser'], (postal, infuser) ->
+
   ###import "sourceResolver.coffee" ###
   ###import "main.coffee" ####
-  ###import "lists.coffee" ###
-  ###import "utility.coffee" ###
   ###import "template.coffee" ###

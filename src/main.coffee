@@ -1,46 +1,53 @@
 configuration =
-  elementIdentifier = 'map-id'
+  elementIdentifier: 'map-id'
 
 Cartographer = () ->
   self = this
-
-  postal.channel("cartographer").subscribe (m) ->
-    if m.map
-      self.map m.name, m.namespace
-    else if m.apply
-      self.apply m.template, m.proxy, m.render, m.error
-    else if m.addSource
-      self.resolver.addSource m.provider
-
-  postal.subscribe "postal", "subscription.*", (m) ->
-    if m.event == "subscription.created"
-
-    else if m.event == "susbcription.removed"
-
   @config = configuration
-
   @templates = {}
 
-  @map = ( name, namespace, target ) ->
-  template = new Template name, namespace, target
-  self.templates[name] = template
+  @map = ( id, name, model ) ->
+    template = new Template id, name, model
+    self.templates[id] = template
+    true
 
-  @apply = ( template, proxy, render, error ) ->
-    template = template or= proxy.__template__
-    templateInstance = self.templates[template]
-    if templateInstance
-      templateInstance.apply proxy, (result) ->
-        if render
-          render( result, templateInstance.target, templateInstance.fqn )
-        else
-          $( '#'+templateInstance.target ).fadeOut 200, ->
-            $(this).html(result).fadeIn(300)
+  @apply = ( id, model, onMarkup, onError ) ->
+    onMarkup = onMarkup ||
+      (result) -> postal.publish "cartographer", "render.#{id}", { id: id, markup: result }
+    onError = onError ||
+      (result) -> postal.publish "cartographer", "render.error.#{id}", result
+
+    if self.templates[id]
+      template = self.templates[id]
+      template.apply model, (result) ->
+        onMarkup result
+    else if model.__template__ and id
+      self.map id, model.__template__, model
+      self.apply id, model, onMarkup, onError
     else
-      self.map template, proxy.getPath()
-      self.apply template, proxy
+      onError "No template with #{id} has been mapped"
 
   @resolver = resolver
-
   self
 
-new Cartographer()
+cartographer = new Cartographer()
+
+# subscribe to api calls
+postal.subscribe "cartographer", "api.*", (message, envelope) ->
+  if envelope.topic == "api.map"
+    cartographer.map message.id, message.name, message.model
+  else if envelope.topic == "api.apply"
+    cartographer.apply message.id, message.model
+  else if envelope.topic == "api.templateSource"
+    cartographer.resolver.addSource message.provider
+
+# subscribe to watch/unwatch events
+postal.subscribe "cartographer", "event.*", (message, envelope) ->
+  if envelope.topic == "event.watch"
+    template = cartographer.templates[message.id]
+    template?.watchEvent(message.event)
+  else if envelope.topic == "event.ignore"
+    template = cartographer.templates[message.id]
+    template?.ignoreEvent(message.event)
+
+cartographer
