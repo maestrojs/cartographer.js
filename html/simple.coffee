@@ -10,7 +10,7 @@ Step = ( step, detail ) ->
     detail: detail
 
 BuildIngredientList = ( list, recipe ) ->
-    recipe.ingredients.push( new Ingredient( x[0],x[1] ) ) for x in list
+    recipe.ingredients.value.push( new Ingredient( x[0],x[1] ) ) for x in list
 
 BuildSteps = ( list, recipe ) ->
     recipe.steps.value.push( new Step( x[0], x[1] ) ) for x in list
@@ -20,7 +20,9 @@ Recipe = ( Title, Description, Ingredients, Steps ) ->
         title: Title
         __template__: "recipe"
         description: Description
-        ingredients: []
+        ingredients:
+          __template__: "ingredient"
+          value: []
         steps:
           __template__: "steps"
           value: []
@@ -31,26 +33,26 @@ Recipe = ( Title, Description, Ingredients, Steps ) ->
     recipe
 
 recipe1 = new Recipe(
-        "Monkey Pot Pie",
-        "Savory chunks of monkey under a crispy crust",
-        [
-            ["pastry flour","1 cup"],
-            ["shortening","1/2 cup"],
-            ["milk","1/2 cup"],
-            ["egg","1 large"],
-            ["adult monkey","1 lb"],
-            ["carrots","2 cups diced"],
-            ["corn","1 cup"],
-            ["celery","1 cup diced"],
-            ["banana","1 sliced"],
-        ],
-        [
-            ["preheat","the oven to 425."],
-            ["combine","everything in big friggen bowl."],
-            ["trick","the monkey into the bowl with the banana."],
-            ["bake","until the monkey stops screaming."]
-        ]
-    )
+  "Monkey Pot Pie",
+  "Savory chunks of monkey under a crispy crust",
+  [
+    ["pastry flour","1 cup"],
+    ["shortening","1/2 cup"],
+    ["milk","1/2 cup"],
+    ["egg","1 large"],
+    ["adult monkey","1 lb"],
+    ["carrots","2 cups diced"],
+    ["corn","1 cup"],
+    ["celery","1 cup diced"],
+    ["banana","1 sliced"],
+  ],
+  [
+    ["preheat","the oven to 425."],
+    ["combine","everything in big friggen bowl."],
+    ["trick","the monkey into the bowl with the banana."],
+    ["bake","until the monkey stops screaming."]
+  ]
+)
 
 recipe2 = new Recipe(
     "Beer cheese soup",
@@ -69,6 +71,8 @@ recipes =
   list: [ recipe1, recipe2 ]
 
 cart = postal.channel("cartographer")
+
+dataBus = postal.channel("recipe_data")
 
 $( ->
     infuser.config.templateUrl = "/tmpl"
@@ -104,4 +108,7 @@ $( ->
       apply: true
       template: "recipe"
       proxy: recipe1
+
+
+
 )

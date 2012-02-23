@@ -1,3 +1,6 @@
+configuration =
+  elementIdentifier = 'map-id'
+
 Cartographer = () ->
   self = this
 
@@ -9,11 +12,18 @@ Cartographer = () ->
     else if m.addSource
       self.resolver.addSource m.provider
 
+  postal.subscribe "postal", "subscription.*", (m) ->
+    if m.event == "subscription.created"
+
+    else if m.event == "susbcription.removed"
+
+  @config = configuration
+
   @templates = {}
 
   @map = ( name, namespace, target ) ->
-    template = new Template name, namespace, target
-    self.templates[name] = template
+  template = new Template name, namespace, target
+  self.templates[name] = template
 
   @apply = ( template, proxy, render, error ) ->
     template = template or= proxy.__template__
@@ -33,4 +43,4 @@ Cartographer = () ->
 
   self
 
-context["cartographer"] = new Cartographer()
+new Cartographer()

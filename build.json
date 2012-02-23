@@ -5,11 +5,8 @@
 	"ext": "ext",
 	"lint": {},
 	"uglify": {},
-    "wrap":{
-        "prefix": "(function(context) {",
-        "suffix": "})(window);"
-    },
     "hosts": {
-        "/": "./html"
+        "/": "./html",
+        "/play": "./play"
     }
 }

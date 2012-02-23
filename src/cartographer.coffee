@@ -5,6 +5,8 @@
   Version: 0.1.0
 ###
 
-###import "sourceResolver.coffee" ###
-###import "main.coffee" ####
-###import "template.coffee" ###
+#define ['postal', 'infuser'], (postal, infuser) ->
+
+  ###import "sourceResolver.coffee" ###
+  ###import "main.coffee" ####
+  ###import "template.coffee" ###
