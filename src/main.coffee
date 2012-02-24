@@ -1,6 +1,3 @@
-configuration =
-  elementIdentifier: 'map-id'
-
 Cartographer = () ->
   self = this
   @config = configuration
@@ -39,7 +36,7 @@ postal.subscribe "cartographer", "api.*", (message, envelope) ->
   else if envelope.topic == "api.apply"
     cartographer.apply message.id, message.model
   else if envelope.topic == "api.templateSource"
-    cartographer.resolver.addSource message.provider
+    cartographer.resolver.appendSource message.provider
 
 # subscribe to watch/unwatch events
 postal.subscribe "cartographer", "event.*", (message, envelope) ->

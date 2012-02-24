@@ -2,8 +2,11 @@ SourceResolver = () ->
   self = this
   sources = []
 
-  @addSource = (source) ->
+  @appendSource = (source) ->
     sources.push source
+
+  @prependSource = (source) ->
+    sources.unshift source
 
   @resolve = (name, onFound, notFound) ->
     # iterate through sources until
@@ -31,7 +34,7 @@ SourceResolver = () ->
 resolver = new SourceResolver()
 
 # add a page check method as the first source
-resolver.addSource(
+resolver.appendSource(
   resolve: (name, success, fail) ->
     template = $( '[' + configuration.elementIdentifier + '="' + name + '-template"]' )
     if template.length > 0
@@ -40,9 +43,11 @@ resolver.addSource(
       fail()
   )
 
+infuser = infuser || window.infuser
+
 # if infuser is present, add it as a source
 if infuser
-  resolver.addSource(
+  resolver.appendSource(
     resolve: (name, success, fail) ->
       infuser.get name,
         (x) -> success x,

@@ -1,0 +1,2 @@
+configuration =
+  elementIdentifier: 'map-id'

@@ -8,15 +8,20 @@ createFqn = ( namespace, id, name, filterName ) ->
   result = "#{newNs}#{delimiter}#{newId}"
   result
 
-conditionalCopy = ( source, target, sourceId, targetId ) ->
+conditionalCopy = ( target, targetId, value ) ->
+  original = target[targetId]
+  if original || value
+    target[targetId] = value || original
+
+propertyCopy = ( source, target, sourceId, targetId ) ->
   if _.isArray(targetId)
-    ( target[x] = source[sourceId] || target[x] ) for x in targetId
+    ( conditionalCopy target, x, source[sourceId] ) for x in targetId
   else
-    target[targetId] = source[sourceId] || target[targetId]
+    conditionalCopy target, targetId, source[sourceId]
 
 copyProperties = ( source, target, list ) ->
   if source and target
-    ( conditionalCopy source, target, x, list[x] ) for x in _.keys(list)
+    ( propertyCopy source, target, x, list[x] ) for x in _.keys(list)
 
 isCurrent = ( id, namespace ) -> id == namespace
 

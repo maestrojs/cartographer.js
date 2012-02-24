@@ -1,10 +1,12 @@
-define(['underscore'], function(_) {
+var factory = function() {
     /*
      postal.js
      Author: Jim Cowart
      License: Dual licensed MIT (http://www.opensource.org/licenses/mit-license) & GPL (http://www.opensource.org/licenses/gpl-license)
      Version 0.4.0
      */
+
+    _ = _ || arguments[0];
 
     var DEFAULT_EXCHANGE = "/",
         DEFAULT_PRIORITY = 50,
@@ -344,4 +346,16 @@ define(['underscore'], function(_) {
         }
     };
 
-    return postal; });
+    return postal;
+};
+
+if( window.define ) {
+    define(['underscore'], function(_) {
+        var postal =  factory(_);
+        window.postal = postal;
+        return postal;
+    });
+}
+else {
+    window.postal = factory();
+}

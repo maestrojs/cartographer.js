@@ -1,4 +1,4 @@
-define(['jquery'], function($){
+var factory = function() {
     /*
      TrafficCop
      Author: Jim Cowart
@@ -7,7 +7,7 @@ define(['jquery'], function($){
      */
 
     var inProgress = {};
-
+    $ = window.$ || arguments[0];
     $.trafficCop = function(url, options) {
         var reqOptions = url, key;
         if(arguments.length === 2) {
@@ -24,4 +24,13 @@ define(['jquery'], function($){
         return inProgress[key];
     };
 
-    return $.trafficCop;});
+    return $.trafficCop;
+};
+
+if( window.define ) {
+    define(['jquery'], function($) {
+      factory($);
+    });
+} else {
+    factory();
+}

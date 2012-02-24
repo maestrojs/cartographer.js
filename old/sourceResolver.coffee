@@ -9,7 +9,7 @@ SourceResolver = () ->
     else
       null
 
-  @addSource = (source) ->
+  @appendSource = (source) ->
     sources.push source
 
   @resolve = (name, onFound, notFound) ->
@@ -25,7 +25,7 @@ SourceResolver = () ->
       finder()
 
   if infuser
-    self.addSource
+    self.appendSource
         resolve: (name, success, fail) ->
             infuser.get name,
                 (x) -> success x,

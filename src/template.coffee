@@ -24,6 +24,9 @@ Template = (id, name, model) ->
     if not element
       console.log "ELEMENT IS NULL AND SHOULDN'T BE!!!!!!"
 
+    if model
+      console.log "at #{namespace} model is #{JSON.stringify(model)}"
+
     # get the element id, namespace and tag
     elementId = element?.attributes[configuration.elementIdentifier]?.value || ""
     fqn = createFqn namespace, elementId, false, self.name
@@ -46,6 +49,8 @@ Template = (id, name, model) ->
           createElement = ( elementModel, modelFqn, idx ) ->
             newId = if elementId == "" then idx else elementId
             newFqn = createFqn modelFqn, newId, false, self.name
+
+            console.log "model #{JSON.stringify(elementModel)}, fqn #{modelFqn} idx #{idx}"
 
             # a resilient approach to inferring what value to use
             # if we're on a 'leaf' in the model's tree, use the model as the value
@@ -75,7 +80,7 @@ Template = (id, name, model) ->
               self[newFqn] = childElement
               childElement
             else
-              controls = ( createElement( self.html, val, newFqn ) for createElement in childrenToCreate )
+              controls = ( createElement( val, newFqn ) for createElement in childrenToCreate )
 
               # get method for creating DOM element, store and return it
               childElement = makeTag( tag, element, newFqn, newId, controls, model, elementModel )
@@ -113,7 +118,8 @@ Template = (id, name, model) ->
   makeTag = (tag, template, fqn, id, val, root, model ) ->
     properties = {}
     templateSource = if template.textContent then template.textContent else template.value
-    content = if val then val else templateSource
+    content = if (val?[id]) or (val and id) then ( val?[id] || val ) else templateSource
+    console.log " for #{tag} source was #{templateSource} and content is #{content}"
     element = {}
 
     if id or id == 0
@@ -193,7 +199,7 @@ Template = (id, name, model) ->
 
   @apply = (model, onResult) ->
     crawl model, "", self.element, (x) ->
-      self.top = x( self.html, model )
+      self.top = x( model, "" )
       wireUp()
       onResult self.top
 

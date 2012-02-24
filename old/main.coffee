@@ -9,8 +9,8 @@ Cartographer = () ->
       self.map m.name, m.namespace
     else if m.apply
       self.apply m.template, m.proxy, m.render, m.error
-    else if m.addSource
-      self.resolver.addSource m.provider
+    else if m.appendSource
+      self.resolver.appendSource m.provider
 
   postal.subscribe "postal", "subscription.*", (m) ->
     if m.event == "subscription.created"

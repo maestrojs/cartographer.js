@@ -738,5 +738,3 @@
     QUnit.specify = pavlov.specify;
     pavlov.util.extend(QUnit.specify, pavlov);
 }());
-
-define([], function() { return pavlov; });

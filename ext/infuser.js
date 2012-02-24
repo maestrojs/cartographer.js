@@ -1,4 +1,4 @@
-define(['jquery', 'trafficcop'],function($,trafficcop) { // You might need to set up a config for require.js for the jquery/trafficcop dependencies to work, or replace it with an absolute path
+(function($, global, undefined) {
     /*
      infuser.js
      Author: Jim Cowart
@@ -185,4 +185,4 @@ define(['jquery', 'trafficcop'],function($,trafficcop) { // You might need to se
             });
         }
     };
-    return infuser; });
+    global.infuser = infuser; })(jQuery, window);
