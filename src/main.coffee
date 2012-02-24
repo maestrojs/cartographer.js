@@ -3,8 +3,8 @@ Cartographer = () ->
   @config = configuration
   @templates = {}
 
-  @map = ( id, name, model ) ->
-    template = new Template id, name, model
+  @map = ( id, name ) ->
+    template = new Template id, name
     self.templates[id] = template
     true
 
@@ -12,7 +12,7 @@ Cartographer = () ->
     onMarkup = onMarkup ||
       (result) -> postal.publish "cartographer", "render.#{id}", { id: id, markup: result }
     onError = onError ||
-      (result) -> postal.publish "cartographer", "render.error.#{id}", result
+      (result) -> postal.publish "cartographer", "render.#{id}.error", result
 
     if self.templates[id]
       template = self.templates[id]
@@ -32,11 +32,13 @@ cartographer = new Cartographer()
 # subscribe to api calls
 postal.subscribe "cartographer", "api.*", (message, envelope) ->
   if envelope.topic == "api.map"
-    cartographer.map message.id, message.name, message.model
+    cartographer.map message.id, message.name
   else if envelope.topic == "api.apply"
     cartographer.apply message.id, message.model
-  else if envelope.topic == "api.templateSource"
-    cartographer.resolver.appendSource message.provider
+  else if envelope.topic == "api.prepend.resolver"
+    cartographer.resolver.prependSource message.resolver
+  else if envelope.topic == "api.append.resolver"
+    cartographer.resolver.appendSource message.resolver
 
 # subscribe to watch/unwatch events
 postal.subscribe "cartographer", "event.*", (message, envelope) ->

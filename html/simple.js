@@ -1,7 +1,6 @@
 require.config({
     paths: {
       'require': '../ext/requirejs-1.0.5',
-      'require-text': '../ext/requirejs-text-1.0.2',
       'jquery': '../ext/jquery-1.7.1',
       'DOMBuilder': '../ext/DOMBuilder.min',
       'underscore': '../ext/underscore-1.3.1',
@@ -9,22 +8,20 @@ require.config({
       'infuser': '../ext/infuser-0.2.0',
       'postal': '../ext/postal-0.4.0',
       'postal.diagnostics': '../ext/postal.diagnostics',
-      'arbiter': '../ext/arbiter-0.1.0',
-      'cartographer': '../lib/cartographer'
+      'cartographer': '../lib/cartographer.amd'
     }
 });
 
 require(
     [
         'require',
-        'require-text',
         'jquery',
         'underscore',
         'postal',
-        //'postal.diagnostics',
+        'postal.diagnostics',
         'infuser',
         'cartographer'],
-    function(require, requireText, $, _, postal, infuser, cartographer) {
+    function(require, $, _, postal, diag, infuser, cartographer) {
     var BuildIngredientList, BuildSteps, Ingredient, Recipe, Step, cart, dataBus, dom, recipe1, recipe2, recipes;
     dom = void 0;
     Ingredient = function(item, qty) {

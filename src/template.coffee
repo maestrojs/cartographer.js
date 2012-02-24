@@ -1,4 +1,4 @@
-Template = (id, name, model) ->
+Template = (id, name) ->
   self = this
 
   crawl = ( model, namespace, element, onDone, templates ) ->
@@ -223,8 +223,6 @@ Template = (id, name, model) ->
       handleTemplateChange
     )
 
-
-
   wireUp = () ->
     (self.watchEvent x) for x in self.watching
 
@@ -248,7 +246,6 @@ Template = (id, name, model) ->
         )
     self.watching.push eventName
     self.watching = _.uniq( self.watching )
-
 
   @ignoreEvent = (eventName) ->
     self.top.off eventname

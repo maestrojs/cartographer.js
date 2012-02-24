@@ -42,10 +42,11 @@ templates =
   'iterative-item':      '<div>
                              <span map-id="name"></span><span> - </span><span map-id="qty"></span>
                           </div>',
+  'interpol':$           '<div id="interpol"><h3>O</h3>nce upon a time, there was a <span map-id="type"></span> named <span map-id="name"></span>.</div>'
 
 
 resolver.prependSource(
-  resolve: (name, success, fail) ->
+  (name, success, fail) ->
     if templates[name]
       success templates[name]
     else

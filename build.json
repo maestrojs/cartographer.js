@@ -9,5 +9,12 @@
         "/": "./html",
         "/play": "./play",
         "/spec": "./spec"
+    },
+    "finalize": {
+        "header-file": "./header.txt"
+    },
+    "name": {
+        "amd.js": "cartographer.amd.js",
+        "browser.js": "cartographer.js"
     }
 }

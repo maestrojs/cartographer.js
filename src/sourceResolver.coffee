@@ -15,7 +15,7 @@ SourceResolver = () ->
     index = 0
     finder = -> # this list is required, DO NOT REMOVE
     finder = () ->
-        call = sources[index]?.resolve
+        call = sources[index]
         if call
           call(
             name,
@@ -34,24 +34,20 @@ SourceResolver = () ->
 resolver = new SourceResolver()
 
 # add a page check method as the first source
-resolver.appendSource(
-  resolve: (name, success, fail) ->
+resolver.appendSource (name, success, fail) ->
     template = $( '[' + configuration.elementIdentifier + '="' + name + '-template"]' )
     if template.length > 0
       success template[0]
     else
       fail()
-  )
 
 infuser = infuser || window.infuser
 
 # if infuser is present, add it as a source
 if infuser
-  resolver.appendSource(
-    resolve: (name, success, fail) ->
+  resolver.appendSource (name, success, fail) ->
       infuser.get name,
         (x) -> success x,
         (x) ->
           console.log "got #{x}"
           fail()
-  )
