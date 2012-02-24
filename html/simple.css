@@ -54,7 +54,7 @@ span {
 
 
 .button:hover {
-    
+
     text-shadow: #0d3349;
     box-shadow: .15em .15em .15em #0d3349;
     background-color: #f5fAff;
@@ -102,29 +102,29 @@ span {
     display: inline-block;
 }
 
-.ingredient #qty {
+.ingredient .qty {
     width: 8em;
 }
 
-.ingredient #item {
+.ingredient .item {
     width: 12em;
 }
 
-#steps span {
+.steps span {
     display: inline-block;
 }
 
-#steps li:nth-child(even) {
+.steps li:nth-child(even) {
     background-color: #E2E0E6;
 }
 
-#steps #step {
+.steps .step {
     font-weight: bold;
     vertical-align: top;
     width: 6em;
 }
 
-#steps #detail {
+.steps .detail {
     width: 16em;
 }
 

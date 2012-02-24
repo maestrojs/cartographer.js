@@ -11,7 +11,7 @@ QUnit.specify "parent-child template", ->
 
     parentChildTemplate = new Template 'parent-child', 'parent-child', model
 
-    expected = '<div map-id="parent-child"><h3>Parent Template</h3><div map-id="parentValue">This is the parent value!</div><div><h2>Child Template</h2><div map-id="childValue">This is the child value!</div></div></div>'
+    expected = '<div map-id="parent"><h2>Parent Template</h2><div map-id="parentValue">This is the parent value!</div><div><h2>Child Template</h2><div map-id="childValue">This is the child value!</div></div></div>'
 
     it "should produce the correct markup", async(() ->
 

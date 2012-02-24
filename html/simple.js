@@ -21,14 +21,15 @@ require(
         'jquery',
         'underscore',
         'postal',
-        'postal.diagnostics',
+        //'postal.diagnostics',
         'infuser',
         'cartographer'],
-    function(require, requireText, $, _, postal, diag, infuser, cartographer) {
+    function(require, requireText, $, _, postal, infuser, cartographer) {
     var BuildIngredientList, BuildSteps, Ingredient, Recipe, Step, cart, dataBus, dom, recipe1, recipe2, recipes;
     dom = void 0;
     Ingredient = function(item, qty) {
         return {
+          //__template__: 'ingredient',
           item: item,
           qty: qty
         };
@@ -91,7 +92,15 @@ require(
         postal.subscribe("cartographer", "render.*", function(message)
         {
             console.log(message.id);
-           $('[map-id="'+ message.id +'"]').replaceWith( message.markup );
+
+            $( '[map-id="'+ message.id +'"]' ).fadeOut( 200, function() {
+                $(this).html(message.markup).fadeIn(300)
+            });
+        });
+
+        postal.subscribe("cartographer", "markup.*", function(message)
+        {
+            $('[map-id="ingredients"]').append( message.markup );
         });
 
         postal.publish("cartographer", "api.map", {
@@ -114,6 +123,17 @@ require(
         postal.publish("cartographer", "api.apply", {
             id: "recipe",
             model: recipe1
+        });
+
+        postal.subscribe("cartographer.recipe", "btn.click", function(x) {
+           postal.publish("cartographer", "template.recipe.add", {
+              operation: 'add',
+              key: 'recipe.ingredients',
+              value: {
+                  item: 'taters',
+                  qty: 'BUSHEL BASKEEEEEET'
+              }
+           });
         });
     });
 });

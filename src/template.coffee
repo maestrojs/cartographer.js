@@ -153,8 +153,6 @@ Template = (id, name, model) ->
     content = if (val?[id]) or (val and id) or template.children.length > 1 then ( val || val?[id] ) else templateSource
     element = {}
 
-    console.log "#{tag} - #{content} vs #{val?.outterHTML || val}"
-
     if id or id == 0
       properties[configuration.elementIdentifier] = id
 
@@ -184,7 +182,7 @@ Template = (id, name, model) ->
       childKey = message.key.substring ( lastIndex + 1 )
 
       if op == "add"
-        addName = parentKey + "_add"
+        addName = message.key + "_add"
         if self.template[addName]
           newElement = self.template[addName](
             message.value,
@@ -196,7 +194,7 @@ Template = (id, name, model) ->
               {
                 operation: "added",
                 parent: parentKey,
-                element: newElement
+                markup: newElement
               }
           )
           #$(self[parentKey]).append newElement
@@ -211,7 +209,7 @@ Template = (id, name, model) ->
             {
               operation: "created",
               parent: parentKey,
-              element: x
+              markup: x
             }
           )
         )
@@ -238,17 +236,18 @@ Template = (id, name, model) ->
     , {}
 
   @watchEvent = (eventName) ->
-    self.top.on eventName, (ev) ->
-      topic =
-        self.id + '.' +
-        ev.target.attributes[configuration.elementIdentifier]?.value + '.' +
-        ev.type
-      postal.publish(
-        "cartographer",
-        topic,
-        ev.target
-      )
-    self.watching = _.uniq( self.watching.push eventName )
+    if self.top
+      $(self.top).on eventName, (ev) ->
+        topic =
+          ev.target.attributes[configuration.elementIdentifier]?.value + '.' +
+          ev.type
+        postal.publish(
+          "cartographer." + self.id,
+          topic,
+          ev.target
+        )
+    self.watching.push eventName
+    self.watching = _.uniq( self.watching )
 
 
   @ignoreEvent = (eventName) ->
