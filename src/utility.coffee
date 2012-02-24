@@ -28,4 +28,9 @@ copyProperties = ( source, target, list ) ->
 
 isCurrent = ( id, namespace ) -> id == namespace
 
-externalTemplate = ( model, id ) -> model[id]?.__template__
+externalTemplate = ( model, id ) ->
+  model[id]?.__template__
+
+externalItemTemplate = ( model, id ) ->
+  if _(model[id]).isArray()
+    model[id]?[0]?.__template__

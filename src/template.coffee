@@ -7,6 +7,7 @@ Template = (id, name, model) ->
     modelId = createFqn namespace, elementId, self.name, true
     missingElement = not element
     template = externalTemplate(model, elementId) || self.name
+
     templateLoaded = not templates[ namespace + '.' + modelId ]
 
     if ( templateLoaded and not isCurrent(modelId, namespace) and externalTemplate(model, elementId) ) or missingElement
@@ -22,6 +23,47 @@ Template = (id, name, model) ->
     else
       onElement(model, namespace, element, onDone, templates )
 
+  buildCreateElement = ( tag, element, elementId, model, childrenToCreate ) ->
+    #create closure around element creation
+    createElement = ( elementModel, modelFqn, idx ) ->
+      newId = if elementId == "" then idx else elementId
+      newFqn = createFqn modelFqn, newId, true, self.name
+
+      # a resilient approach to inferring what value to use
+      # if we're on a 'leaf' in the model's tree, use the model as the value
+      # otherwise try to access the model's property
+      val = (if newId == newFqn or newId == undefined then elementModel else elementModel[newId]) || elementModel
+
+      # if the current node has a .value property, use that as the value instead
+      if val?.value then val = val.value
+
+      # if the current value is a collection
+      collection = if val?.length then val else val?.items
+      if collection and collection.length
+        list = []
+        childFactory = childrenToCreate[0]
+
+        # create a method for adding new elements to this template collection
+        self.template[newFqn + "_add"] = ( newIndex, newModel ) ->
+          childFactory( newModel, newFqn, newIndex )
+
+        # create a list of element factories for each child in the model's
+        # collection
+        for indx in [0..collection.length-1]
+          list.push ( factory( collection, newFqn, indx ) for factory in childrenToCreate )
+
+        # get method for creating DOM element, store and return it
+        childElement = makeTag( tag, element, newFqn, newId, list, model, elementModel )
+        self[newFqn] = childElement
+        childElement
+      else
+        controls = ( createElement( val, newFqn ) for createElement in childrenToCreate )
+
+        # get method for creating DOM element, store and return it
+        childElement = makeTag( tag, element, newFqn, newId, controls, model, elementModel )
+        self[newFqn] = childElement
+        childElement
+
   onElement = ( model, namespace, element, onDone, templates ) ->
     #guards
     if not element
@@ -32,87 +74,78 @@ Template = (id, name, model) ->
     fqn = createFqn namespace, elementId, true, self.name
     tag = element.tagName.toUpperCase()
 
-    # if this element has a child collection, then we need to traverse it
-    # this creates a function that will get called for each of this element's
-    # children and stores the function in a collection
-    childrenCount = element.children?.length
-    if childrenCount > 0
-      childrenToCreate = []
-      onChildElement = (child) ->
-        #add element to child collection
-        childrenToCreate.push child
 
-        # is this the last child element?
-        if childrenToCreate.length == childrenCount
+    # if this model / id maps to a model collection, check for external element templates
+    template = externalItemTemplate(model, elementId)
+    if template and not templates[ namespace + '.' + elementId ]
+      resolver.resolve(
+        template,
+        (x) ->
+          templates[namespace + '.' + elementId] = true
+          children = if x.length > 1 then x else [x]
+          childrenCount = children.length
+          if childrenCount > 0
+            childrenToCreate = []
+            onChildElement = (child) ->
+            #add element to child collection
+              childrenToCreate.push child
+              # is this the last child element?
+              if childrenToCreate.length == childrenCount
+              # store the template creation method
+                createElement = buildCreateElement tag, element, elementId, model, childrenToCreate
+                self.template[fqn] = createElement
+                onDone createElement
 
-          #create closure around element creation
-          createElement = ( elementModel, modelFqn, idx ) ->
-            newId = if elementId == "" then idx else elementId
-            newFqn = createFqn modelFqn, newId, true, self.name
-
-            # a resilient approach to inferring what value to use
-            # if we're on a 'leaf' in the model's tree, use the model as the value
-            # otherwise try to access the model's property
-            val = (if newId == newFqn or newId == undefined then elementModel else elementModel[newId]) || elementModel
-
-            # if the current node has a .value property, use that as the value instead
-            if val?.value then val = val.value
-
-            # if the current value is a collection
-            collection = if val?.length then val else val?.items
-            if collection and collection.length
-              list = []
-              childFactory = childrenToCreate[0]
-
-              # create a method for adding new elements to this template collection
-              self.template[newFqn + "_add"] = ( newIndex, newModel ) ->
-                childFactory( newModel, newFqn, newIndex )
-
-              # create a list of element factories for each child in the model's
-              # collection
-              for indx in [0..collection.length-1]
-                list.push ( factory( collection, newFqn, indx ) for factory in childrenToCreate )
-
-              # get method for creating DOM element, store and return it
-              childElement = makeTag( tag, element, newFqn, newId, list, model, elementModel )
-              self[newFqn] = childElement
-              childElement
-            else
-              controls = ( createElement( val, newFqn ) for createElement in childrenToCreate )
-
-              # get method for creating DOM element, store and return it
-              childElement = makeTag( tag, element, newFqn, newId, controls, model, elementModel )
-              self[newFqn] = childElement
-              childElement
-
-          # store the template creation method
-          self.template[fqn] = createElement
-          onDone createElement
-
-      # now that we have a collection of functions to call for each child,
-      # time to traverse the list and make the calls
-      childCallback = (x) -> onChildElement x
-      ( crawl( model, fqn, child, childCallback, templates ) for child in element.children )
+            # now that we have a collection of functions to call for each child,
+            # time to traverse the list and make the calls
+            childCallback = (y) -> onChildElement y
+            ( crawl( model, fqn, child, childCallback, templates ) for child in children )
+        ,
+        () ->
+          console.log "No template could be found for #{template}"
+      )
     else
-      createElement = ( elementModel, modelFqn, idx ) ->
-        newId = if elementId == "" then idx else elementId
-        newFqn = createFqn modelFqn, newId, true, self.name
+      # if this element has a child collection, then we need to traverse it
+      # this creates a function that will get called for each of this element's
+      # children and stores the function in a collection
+      childrenCount = element.children?.length
+      if childrenCount > 0
+        childrenToCreate = []
+        onChildElement = (child) ->
+          #add element to child collection
+          childrenToCreate.push child
+          # is this the last child element?
+          if childrenToCreate.length == childrenCount
+            # store the template creation method
+            createElement = buildCreateElement tag, element, elementId, model, childrenToCreate
+            self.template[fqn] = createElement
+            onDone createElement
 
-        # a resilient approach to inferring what value to use
-        # if we're on a 'leaf' in the model's tree, use the model as the value
-        # otherwise try to access the model's property
-        val = if newId == newFqn or newId == undefined then elementModel else elementModel[newId]
+        # now that we have a collection of functions to call for each child,
+        # time to traverse the list and make the calls
+        childCallback = (x) -> onChildElement x
+        ( crawl( model, fqn, child, childCallback, templates ) for child in element.children )
+      else
+        createElement = ( elementModel, modelFqn, idx ) ->
+          newId = if elementId == "" then idx else elementId
+          newFqn = createFqn modelFqn, newId, true, self.name
 
-        # if the current node has a .value property, use that as the value instead
-        if val?.value then val = val.value
+          # a resilient approach to inferring what value to use
+          # if we're on a 'leaf' in the model's tree, use the model as the value
+          # otherwise try to access the model's property
+          val = if newId == newFqn or newId == undefined then elementModel else elementModel[newId]
 
-        # get method for creating DOM element, store and return it
-        childElement = makeTag( tag, element, newFqn, newId, val, model, elementModel )
-        self[newFqn] = childElement
-        childElement
+          # if the current node has a .value property, use that as the value instead
+          if val?.value then val = val.value
 
-      self.template[fqn] = createElement
-      onDone createElement
+          # get method for creating DOM element, store and return it
+          childElement = makeTag( tag, element, newFqn, newId, val, model, elementModel )
+          self[newFqn] = childElement
+          childElement
+
+        self.template[fqn] = createElement
+        onDone createElement
+
 
   makeTag = (tag, template, fqn, id, val, root, model ) ->
     properties = {}
@@ -120,7 +153,7 @@ Template = (id, name, model) ->
     content = if (val?[id]) or (val and id) or template.children.length > 1 then ( val || val?[id] ) else templateSource
     element = {}
 
-    #console.log "#{tag} - #{content} vs #{val?.outterHTML || val}"
+    console.log "#{tag} - #{content} vs #{val?.outterHTML || val}"
 
     if id or id == 0
       properties[configuration.elementIdentifier] = id
