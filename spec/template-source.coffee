@@ -23,6 +23,15 @@ templates =
                         <span map-id="lastName"></span>
                       </div>
                     </div>'
+  parent:           '<div map-id="parent">
+                      <h2>Parent Template</h2>
+                      <div map-id="parentValue"></div>
+                      <div map-id="childValue"></div>
+                    </div>',
+  child:           '<div>
+                      <h2>Child Template</h2>
+                      <div map-id="childValue"></div>
+                    </div>',
 
 
 resolver.prependSource(

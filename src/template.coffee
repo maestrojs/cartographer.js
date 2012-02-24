@@ -1,32 +1,31 @@
 Template = (id, name, model) ->
   self = this
 
-  crawl = ( model, namespace, element, onDone ) ->
+  crawl = ( model, namespace, element, onDone, templates ) ->
     elementId = element?.attributes[configuration.elementIdentifier]?.value || ""
     elementId = if elementId == self.name then "" else elementId
     modelId = createFqn namespace, elementId, self.name, true
     missingElement = not element
     template = externalTemplate(model, elementId) || self.name
-    if ( not isCurrent(modelId, namespace) and externalTemplate(model, elementId) ) or missingElement
+    templateLoaded = not templates[ namespace + '.' + modelId ]
+
+    if ( templateLoaded and not isCurrent(modelId, namespace) and externalTemplate(model, elementId) ) or missingElement
       resolver.resolve(
         template,
         (x) ->
-          x.nested = true
-          onElement(model, namespace, x, onDone)
+          templates[namespace + '.' + modelId] = true
+          onElement(model, namespace, x, onDone, templates )
         ,
         () ->
           console.log "No template could be found for #{template}"
       )
     else
-      onElement(model, namespace, element, onDone)
+      onElement(model, namespace, element, onDone, templates )
 
-  onElement = ( model, namespace, element, onDone ) ->
+  onElement = ( model, namespace, element, onDone, templates ) ->
     #guards
     if not element
       console.log "ELEMENT IS NULL AND SHOULDN'T BE!!!!!!"
-
-    if model
-      console.log "at #{namespace} model is #{JSON.stringify(model)}"
 
     # get the element id, namespace and tag
     elementId = element?.attributes[configuration.elementIdentifier]?.value || ""
@@ -51,19 +50,16 @@ Template = (id, name, model) ->
             newId = if elementId == "" then idx else elementId
             newFqn = createFqn modelFqn, newId, true, self.name
 
-            console.log "model #{JSON.stringify(elementModel)}, fqn #{modelFqn} idx #{idx}"
-
             # a resilient approach to inferring what value to use
             # if we're on a 'leaf' in the model's tree, use the model as the value
             # otherwise try to access the model's property
             val = (if newId == newFqn or newId == undefined then elementModel else elementModel[newId]) || elementModel
 
             # if the current node has a .value property, use that as the value instead
-            #if val?.value then val = val.value
+            if val?.value then val = val.value
 
             # if the current value is a collection
             collection = if val?.length then val else val?.items
-            #collection = []
             if collection and collection.length
               list = []
               childFactory = childrenToCreate[0]
@@ -95,7 +91,8 @@ Template = (id, name, model) ->
 
       # now that we have a collection of functions to call for each child,
       # time to traverse the list and make the calls
-      ( crawl( model, fqn, child, (x) -> onChildElement x ) for child in element.children )
+      childCallback = (x) -> onChildElement x
+      ( crawl( model, fqn, child, childCallback, templates ) for child in element.children )
     else
       createElement = ( elementModel, modelFqn, idx ) ->
         newId = if elementId == "" then idx else elementId
@@ -120,8 +117,10 @@ Template = (id, name, model) ->
   makeTag = (tag, template, fqn, id, val, root, model ) ->
     properties = {}
     templateSource = if template.textContent then template.textContent else template.value
-    content = if (val?[id]) or (val and id) then ( val || val?[id] ) else templateSource
+    content = if (val?[id]) or (val and id) or template.children.length > 1 then ( val || val?[id] ) else templateSource
     element = {}
+
+    #console.log "#{tag} - #{content} vs #{val?.outterHTML || val}"
 
     if id or id == 0
       properties[configuration.elementIdentifier] = id
@@ -203,6 +202,7 @@ Template = (id, name, model) ->
       self.top = x( model, "" )
       wireUp()
       onResult self.top
+    , {}
 
   @watchEvent = (eventName) ->
     self.top.on eventName, (ev) ->

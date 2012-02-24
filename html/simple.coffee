@@ -39,9 +39,9 @@ require(
 
     dom = undefined
     Ingredient = ( item, qty ) ->
-    item: item
-
-    qty: qty
+      __template__ : "ingredient"
+      item: item
+      qty: qty
 
 
     Step = ( step, detail ) ->
@@ -60,7 +60,7 @@ require(
         __template__: "recipe"
         description: Description
         ingredients:
-          __template__: "ingredient"
+          #__template__: "ingredient"
           value: []
         steps:
           __template__: "steps"
