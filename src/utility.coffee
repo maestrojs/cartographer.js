@@ -2,7 +2,10 @@
 createFqn = ( namespace, id, name, filterName ) ->
   newNs = namespace || ""
   if filterName
-    newNs = if newNs == name then "" else newNs
+    if namespace == "" and id == name
+      return ""
+    else
+      newNs = if newNs == name then "" else newNs
   newId = id || ""
   delimiter = if newNs != "" and newId != "" then "." else ""
   result = "#{newNs}#{delimiter}#{newId}"

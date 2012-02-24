@@ -11,7 +11,7 @@ QUnit.specify "flat template", ->
 
     expected = '<div map-id="flat"><h3>First Name</h3><span map-id="firstName">Alex</span><h3>Last Name</h3><span map-id="lastName">Robson</span></div>'
 
-    it "should be there", async(() ->
+    it "should produce the correct markup", async(() ->
 
       markup = ''
       flatTemplate.apply model, (x) ->
@@ -21,5 +21,3 @@ QUnit.specify "flat template", ->
         assert(markup).equals expected
         resume()
       )
-
-

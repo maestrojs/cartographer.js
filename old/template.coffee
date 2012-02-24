@@ -52,6 +52,8 @@ Template = (name, namespace, target) ->
             val = if actualId == myFqn or actualId == undefined then model else model?[actualId]
             if val?.value then val = val.value
             collection = if val?.length then val else val?.items
+
+
             if collection and collection.length
               list = []
               childFactory = createChildren[0]
@@ -64,6 +66,9 @@ Template = (name, namespace, target) ->
               childElement = makeTag( context, html, tag, element, myFqn, actualId, list, root, model )
               context[myFqn] = childElement
               childElement
+
+
+
             else
               controls = ( call( html, val, myFqn ) for call in createChildren )
               childElement = makeTag( context, html, tag, element, myFqn, actualId, controls, root, model )

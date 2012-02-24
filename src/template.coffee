@@ -3,6 +3,7 @@ Template = (id, name, model) ->
 
   crawl = ( model, namespace, element, onDone ) ->
     elementId = element?.attributes[configuration.elementIdentifier]?.value || ""
+    elementId = if elementId == self.name then "" else elementId
     modelId = createFqn namespace, elementId, self.name, true
     missingElement = not element
     template = externalTemplate(model, elementId) || self.name
@@ -29,7 +30,7 @@ Template = (id, name, model) ->
 
     # get the element id, namespace and tag
     elementId = element?.attributes[configuration.elementIdentifier]?.value || ""
-    fqn = createFqn namespace, elementId, false, self.name
+    fqn = createFqn namespace, elementId, true, self.name
     tag = element.tagName.toUpperCase()
 
     # if this element has a child collection, then we need to traverse it
@@ -48,20 +49,21 @@ Template = (id, name, model) ->
           #create closure around element creation
           createElement = ( elementModel, modelFqn, idx ) ->
             newId = if elementId == "" then idx else elementId
-            newFqn = createFqn modelFqn, newId, false, self.name
+            newFqn = createFqn modelFqn, newId, true, self.name
 
             console.log "model #{JSON.stringify(elementModel)}, fqn #{modelFqn} idx #{idx}"
 
             # a resilient approach to inferring what value to use
             # if we're on a 'leaf' in the model's tree, use the model as the value
             # otherwise try to access the model's property
-            val = if newId == newFqn or newId == undefined then elementModel else elementModel[newId]
+            val = (if newId == newFqn or newId == undefined then elementModel else elementModel[newId]) || elementModel
 
             # if the current node has a .value property, use that as the value instead
-            if val?.value then val = val.value
+            #if val?.value then val = val.value
 
             # if the current value is a collection
             collection = if val?.length then val else val?.items
+            #collection = []
             if collection and collection.length
               list = []
               childFactory = childrenToCreate[0]
@@ -118,8 +120,7 @@ Template = (id, name, model) ->
   makeTag = (tag, template, fqn, id, val, root, model ) ->
     properties = {}
     templateSource = if template.textContent then template.textContent else template.value
-    content = if (val?[id]) or (val and id) then ( val?[id] || val ) else templateSource
-    console.log " for #{tag} source was #{templateSource} and content is #{content}"
+    content = if (val?[id]) or (val and id) then ( val || val?[id] ) else templateSource
     element = {}
 
     if id or id == 0
