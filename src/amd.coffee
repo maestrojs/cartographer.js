@@ -1,2 +1,2 @@
-define ['jQuery', 'underscore', 'postal', 'infuser', 'DOMBuilder'], ($, _, postal, infuser, DOMBuilder) ->
+define ['jquery', 'underscore', 'postal', 'infuser', 'DOMBuilder'], ($, _, postal, infuser) ->
   ###import "cartographer.coffee" ###

@@ -50,7 +50,9 @@ postal.subscribe "cartographer", "event.*", (message, envelope) ->
     template?.ignoreEvent(message.event)
 
 postal.subscribe "postal", "subscription.*", (message, envelope) ->
-  if envelope.topic == "subscription.created" && message.exchange.match /^cartographer[.].+/
+  console.log "HEY"
+  if envelope.topic == "subscription.created" && message.exchange.match /cartographer/
+
     templateId = message.exchange.split('.')[1]
     template = cartographer.templates[templateId]
     if template

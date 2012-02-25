@@ -123,6 +123,7 @@ require(
         });
 
         postal.subscribe("cartographer.recipe", "btn.click", function(x) {
+           console.log("LOOK MA!, I AUTO-HOOKED ME A DOM EVENT!");
            postal.publish("cartographer", "template.recipe.add", {
               operation: 'add',
               key: 'recipe.ingredients',

@@ -9,6 +9,7 @@ define(['underscore'], function(_) {
     var DEFAULT_EXCHANGE = "/",
         DEFAULT_PRIORITY = 50,
         DEFAULT_DISPOSEAFTER = 0,
+        SYSTEM_EXCHANGE = "postal",
         NO_OP = function() { },
         parsePublishArgs = function(args) {
             var parsed = { envelope: { } }, env;
@@ -90,11 +91,24 @@ define(['underscore'], function(_) {
         this.maxCalls = DEFAULT_DISPOSEAFTER;
         this.onHandled = NO_OP;
         this.context = null;
+
+        postal.publish(SYSTEM_EXCHANGE, "subscription.created",
+            {
+                event: "subscription.created",
+                exchange: exchange,
+                topic: topic
+            });
     };
 
     SubscriptionDefinition.prototype = {
         unsubscribe: function() {
             postal.configuration.bus.unsubscribe(this);
+            postal.publish(SYSTEM_EXCHANGE, "subscription.removed",
+                {
+                    event: "subscription.removed",
+                    exchange: this.exchange,
+                    topic: this.topic
+                });
         },
 
         defer: function() {
@@ -226,9 +240,7 @@ define(['underscore'], function(_) {
         wireTaps: [],
 
         publish: function(data, envelope) {
-            _.each(this.wireTaps,function(tap) {
-                tap(data, envelope);
-            });
+            this.notifyTaps(data, envelope);
 
             _.each(this.subscriptions[envelope.exchange], function(topic) {
                 _.each(topic, function(binding){
@@ -269,6 +281,12 @@ define(['underscore'], function(_) {
             }
 
             return _.bind(function() { this.unsubscribe(subDef); }, this);
+        },
+
+        notifyTaps: function(data, envelope) {
+            _.each(this.wireTaps,function(tap) {
+                tap(data, envelope);
+            });
         },
 
         unsubscribe: function(config) {
