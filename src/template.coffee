@@ -16,17 +16,20 @@ Template = (id, name) ->
       false
 
   crawl = ( model, namespace, element, onDone, templates ) ->
-    elementId = element?.attributes[configuration.elementIdentifier]?.value || ""
-    elementId = if elementId == self.name then "" else elementId
-    modelId = createFqn namespace, elementId, self.name, true
-    missingElement = not element
-    template = externalTemplate(model, elementId) || self.name
-    useTemplate = () -> ( not isCurrent(modelId, namespace) and externalTemplate(model, elementId) or missingElement)
-    templateId = namespace + '.' + modelId
+    if element.nodeType and element.nodeType != 1
+      onDone () -> element
+    else
+      elementId = element?.attributes[configuration.elementIdentifier]?.value || ""
+      elementId = if elementId == self.name then "" else elementId
+      modelId = createFqn namespace, elementId, self.name, true
+      missingElement = not element
+      template = externalTemplate(model, elementId) || self.name
+      useTemplate = () -> ( not isCurrent(modelId, namespace) and externalTemplate(model, elementId) or missingElement)
+      templateId = namespace + '.' + modelId
 
-    onTemplate = (x) -> processElement model, namespace, x, onDone, templates
-    if not handleTemplate useTemplate, template, templateId, templates, onTemplate
-      processElement(model, namespace, element, onDone, templates )
+      onTemplate = (x) -> processElement model, namespace, x, onDone, templates
+      if not handleTemplate useTemplate, template, templateId, templates, onTemplate
+        processElement(model, namespace, element, onDone, templates )
 
   buildCreateElement = ( tag, element, elementId, model, childrenToCreate ) ->
     #create closure around element creation
@@ -50,9 +53,9 @@ Template = (id, name) ->
           list = []
 
           # create a method for adding new elements to this template collection
-          childFactory = childrenToCreate[0]
+          children = childrenToCreate.slice(0)
           self.template[newFqn + "_add"] = ( newIndex, newModel ) ->
-            factory( newModel, newFqn, newIndex ) for factory in childrenToCreate
+            factory( newModel, newFqn, newIndex ) for factory in children
 
           # for each value in the collection
           # create the set of child elements for that value
@@ -75,7 +78,6 @@ Template = (id, name) ->
         self[newFqn] = childElement
         childElement
 
-
   # if this element has a child collection, then we need to traverse it
   # this creates a function that will get called for each of this element's
   # children and stores the function in a collection
@@ -83,19 +85,21 @@ Template = (id, name) ->
       childrenCount = children.length
       childrenToCreate = []
       onChildElement = (child) ->
-          #add element to child collection
-          childrenToCreate.push child
-          # is this the last child element?
-          if childrenToCreate.length == childrenCount
-          # store the template creation method
+          if child.nodeType == undefined || child.nodeType == 1
+            #add element to child collection
+            childrenToCreate.push child
+            # is this the last child element?
+            if childrenToCreate.length == childrenCount
+              # store the template creation method
               createElement = buildCreateElement tag, element, elementId, model, childrenToCreate
               self.template[fqn] = createElement
               onDone createElement
+          else
+            onDone child
 
       # now that we have a collection of functions to call for each child,
       # time to traverse the list and make the calls
-      childCallback = (y) -> onChildElement y
-      ( crawl( model, fqn, child, childCallback, templates ) for child in children )
+      ( crawl( model, fqn, child, onChildElement, templates ) for child in children )
 
   processElement = ( model, namespace, element, onDone, templates ) ->
     # get the element id, namespace and tag
@@ -112,8 +116,8 @@ Template = (id, name) ->
       processElementChildren tag, model, fqn, element, elementId, children, onDone, templates
 
     if not handleTemplate( predicate, template, templateId, templates, onTemplate)
-      children = element.children
-      #children = element.childNodes
+      #children = element.children
+      children = element.childNodes
       childrenCount = children.length
 
       if childrenCount > 0
@@ -123,12 +127,17 @@ Template = (id, name) ->
         self.template[fqn] = createElement
         onDone createElement
 
-
   makeTag = (tag, template, fqn, id, val, root, model ) ->
     properties = {}
-    templateSource = if template.textContent then template.textContent else template.value
-    content = if (val?[id]) or (val and id) or template.children.length > 1 then ( val || val?[id] ) else templateSource
+    ###templateSource = if template.textContent then template.textContent else template.value
+    content = if (val?[id]) or (val and id) or template.children.length > 1 then ( val?[id] || val ) else templateSource
+    ###
+    content = if _.isArray(val) and not _.isString(val) then val || val?[id] else val?[id] || val
+    content = if template.children.length == 0 and id == undefined then template.textContent else content
+
     element = {}
+
+    console.log "#{tag} - #{fqn} - #{id} - #{val} - #{model}"
 
     if id or id == 0
       properties[configuration.elementIdentifier] = id
@@ -191,6 +200,8 @@ Template = (id, name) ->
           )
         )
 
+
+
   subscribe = ( ) ->
     if self.changeSubscription != undefined
       self.changeSubscription.unsubscribe()
@@ -227,6 +238,33 @@ Template = (id, name) ->
   @ignoreEvent = (eventName) ->
     self.top.off eventname
     self.watching = _.reject( self.watching, (x) -> x == eventName )
+
+  @update = (fqn, model, onResult) ->
+    lastIndex = fqn.lastIndexOf "."
+    parentKey = fqn.substring 0, lastIndex
+    childKey = fqn.substring ( lastIndex + 1 )
+
+    if self.template[fqn]
+      newElement = self.template[fqn](
+        model,
+        parentKey,
+        childKey
+      )
+      onResult newElement
+
+  @add = (fqn, model, onResult) ->
+    lastIndex = fqn.lastIndexOf "."
+    parentKey = fqn.substring 0, lastIndex
+    childKey = fqn.substring ( lastIndex + 1 )
+
+    addName = fqn + "_add"
+    if self.template[addName]
+      count = self[fqn].children.length
+      newElement = self.template[addName](
+        count,
+        model
+      )
+      onResult newElement
 
   @name = name
   @id = id

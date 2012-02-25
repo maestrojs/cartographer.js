@@ -9,15 +9,21 @@ QUnit.specify "flat template", ->
 
     flatTemplate = new Template 'flat', 'flat', model
 
-    expected = '<div map-id="flat"><h3>First Name</h3><span map-id="firstName">Alex</span><h3>Last Name</h3><span map-id="lastName">Robson</span></div>'
+    expected =                '<div map-id="flat">
+                                <h3>First Name</h3>
+                                <span map-id="firstName">Alex</span>
+                                <h3>Last Name</h3>
+                                <span map-id="lastName">Robson</span>
+                              </div>'
 
     it "should produce the correct markup", async(() ->
 
       markup = ''
+
       flatTemplate.apply model, (x) ->
-        markup = x.outerHTML
+        markup = scrub(x.outerHTML)
 
       setTimeout () ->
-        assert(markup).equals expected
+        assert(markup).equals scrub(expected)
         resume()
       )
