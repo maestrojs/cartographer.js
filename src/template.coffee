@@ -3,7 +3,6 @@ Template = (id, name) ->
 
   handleTemplate = ( predicate, template, templateId, templates, onTemplate ) ->
     if predicate() and not templates[templateId]
-      console.log "requesting template #{template}"
       resolver.resolve(
         template,
         (x) ->
@@ -20,7 +19,6 @@ Template = (id, name) ->
       onDone () -> element
     else
       elementId = element?.attributes[configuration.elementIdentifier]?.value || ""
-      #elementId = if elementId == self.name or elementId == namespace == "" then self.id else elementId
       modelId = (createFqn namespace, elementId, self.name, true) || self.id
       missingElement = not element
       template = externalTemplate(model, elementId) || self.name
@@ -108,8 +106,6 @@ Template = (id, name) ->
     fqn = createFqn namespace, elementId, true, self.name
     tag = element.tagName.toUpperCase()
 
-    #console.log "Process element namespace for #{namespace} and #{elementId}: #{fqn}"
-
     # if this model / id maps to a model collection, check for external element templates
     template = externalItemTemplate(model, elementId)
     templateId = namespace + '.' + elementId
@@ -119,7 +115,6 @@ Template = (id, name) ->
       processElementChildren tag, model, fqn, element, elementId, children, onDone, templates
 
     if not handleTemplate( predicate, template, templateId, templates, onTemplate)
-      #children = element.children
       children = element.childNodes
       childrenCount = children.length
 

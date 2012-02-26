@@ -1,11 +1,6 @@
 # conditionally combine the current namespace and the current element id
 createFqn = ( namespace, id, name, filterName ) ->
   newNs = namespace || ""
-  ###if false
-    if namespace == "" and id == name
-      return ""
-    else
-      newNs = if newNs == name then "" else newNs###
   newId = if id == undefined then "" else id
   delimiter = if newNs != "" and newId != "" then "." else ""
   result = "#{newNs}#{delimiter}#{newId}"

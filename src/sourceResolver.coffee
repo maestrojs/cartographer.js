@@ -49,5 +49,4 @@ if infuser
       infuser.get name,
         (x) -> success x,
         (x) ->
-          console.log "got #{x}"
           fail()
