@@ -12,29 +12,31 @@ QUnit.specify "iterative template", ->
 
     expected = '<div map-id="iterative">
                   <h3>Grocery List</h3>
-                  <div map-id="listItems">
-                    <div map-id="0">
-                      <span map-id="name">banana</span>
+                  <div map-id="iterative.listItems">
+                    <div map-id="iterative.listItems.0">
+                      <span map-id="iterative.listItems.0.name">banana</span>
                       <span> - </span>
-                      <span map-id="qty">all of them</span>
+                      <span map-id="iterative.listItems.0.qty">all of them</span>
                     </div>
-                    <div map-id="1">
-                      <span map-id="name">apple</span>
+                    <div map-id="iterative.listItems.1">
+                      <span map-id="iterative.listItems.1.name">apple</span>
                       <span> - </span>
-                      <span map-id="qty">2</span>
+                      <span map-id="iterative.listItems.1.qty">2</span>
                     </div>
-                    <div map-id="2">
-                      <span map-id="name">oranges</span>
+                    <div map-id="iterative.listItems.2">
+                      <span map-id="iterative.listItems.2.name">oranges</span>
                       <span> - </span>
-                      <span map-id="qty">three</span>
+                      <span map-id="iterative.listItems.2.qty">three</span>
                     </div>
                   </div>
                 </div>'
 
+
+
     it "should produce the correct markup", async(() ->
 
         markup = ''
-        iterativeTemplate.apply model, (x) ->
+        iterativeTemplate.apply model, (id, op, x) ->
           markup = scrub(x.outerHTML)
 
         setTimeout () ->

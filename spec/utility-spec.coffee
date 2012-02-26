@@ -1,10 +1,10 @@
 QUnit.specify "utility functions", ->
   describe "naming", ->
 
-    it "should not include template in namespace", () ->
+    it "should include template in namespace", () ->
       fqn = createFqn '', 'iterative', 'iterative', true
-      assert(fqn).equals('')
+      assert(fqn).equals('iterative')
 
-    it "should not include template in namespace", () ->
+    it "should include template in namespace", () ->
       fqn = createFqn 'iterative', 'id', 'iterative', true
-      assert(fqn).equals('id')
+      assert(fqn).equals('iterative.id')

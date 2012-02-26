@@ -88,46 +88,48 @@ require(
 
         postal.subscribe("cartographer", "render.*", function(message)
         {
-            console.log(message.id);
+            if( message.operation == "render" )
+                $( '[map-id="'+ message.template +'"]' ).fadeOut( 200, function() {
+                    $(this).html(message.markup).fadeIn(300)
+                });
+            else
 
-            $( '[map-id="'+ message.id +'"]' ).fadeOut( 200, function() {
-                $(this).html(message.markup).fadeIn(300)
-            });
+                $('[map-id="'+message.parent+'"]').append( message.markup );
         });
 
-        postal.subscribe("cartographer", "markup.*", function(message)
-        {
-            $('[map-id="ingredients"]').append( message.markup );
-        });
-
-        postal.publish("cartographer", "api.map", {
-            id: "recipe-list",
+        postal.publish("cartographer", "api", {
+            template: "recipe-list",
             name: "recipes",
-            model: recipes
+            model: recipes,
+            operation: "map"
         });
 
-        postal.publish("cartographer", "api.map", {
-            id: "recipe",
+        postal.publish("cartographer", "api", {
+            template: "recipe",
             name: "recipe",
-            model: recipe1
+            model: recipe1,
+            operation: "map"
         });
 
-        postal.publish("cartographer", "api.apply", {
-           id: "recipe-list",
-           model: recipes
+        postal.publish("cartographer", "api", {
+           template: "recipe-list",
+           model: recipes,
+           operation: "apply"
         });
 
-        postal.publish("cartographer", "api.apply", {
-            id: "recipe",
-            model: recipe1
+        postal.publish("cartographer", "api", {
+            template: "recipe",
+            model: recipe1,
+            operation: "apply"
         });
 
-        postal.subscribe("cartographer.recipe", "btn.click", function(x) {
-           console.log("LOOK MA!, I AUTO-HOOKED ME A DOM EVENT!");
-           postal.publish("cartographer", "template.recipe.add", {
+        postal.subscribe("cartographer.recipe", "recipe.newIngredient.btn.click", function(x) {
+           console.log("SHA-CLACKITY!");
+           postal.publish("cartographer", "api", {
               operation: 'add',
-              key: 'recipe.ingredients',
-              value: {
+              template: 'recipe',
+              id: 'recipe.ingredients',
+              model: {
                   item: 'taters',
                   qty: 'BUSHEL BASKEEEEEET'
               }

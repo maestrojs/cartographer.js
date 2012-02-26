@@ -11,16 +11,16 @@ QUnit.specify "flat template", ->
 
     expected =                '<div map-id="flat">
                                 <h3>First Name</h3>
-                                <span map-id="firstName">Alex</span>
+                                <span map-id="flat.firstName">Alex</span>
                                 <h3>Last Name</h3>
-                                <span map-id="lastName">Robson</span>
+                                <span map-id="flat.lastName">Robson</span>
                               </div>'
 
     it "should produce the correct markup", async(() ->
 
       markup = ''
 
-      flatTemplate.apply model, (x) ->
+      flatTemplate.apply model, (id, op, x) ->
         markup = scrub(x.outerHTML)
 
       setTimeout () ->

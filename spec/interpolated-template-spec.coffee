@@ -9,16 +9,15 @@ QUnit.specify "interpolation template", ->
 
     interpolationTemplate = new Template 'interpol', 'interpol'
 
-    expected = '<div>
-                  <h3>O</h3>nce upon a time, there was a <span map-id="type">geek</span> named <span map-id="name">Alex</span>.
+    expected = '<div map-id="interpol">
+                  <h3>O</h3>nce upon a time, there was a <span map-id="interpol.type">geek</span> named <span map-id="interpol.name">Alex</span>.
                 </div>'
 
     it "should produce the correct markup", async(() ->
 
         markup = ''
-        interpolationTemplate.apply model, (x) ->
+        interpolationTemplate.apply model, (id, op, x) ->
           markup = scrub(x.outerHTML)
-          console.log markup
 
         setTimeout () ->
           assert(markup).equals scrub(expected)

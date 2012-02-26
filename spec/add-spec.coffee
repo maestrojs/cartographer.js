@@ -12,21 +12,21 @@ QUnit.specify "template add", ->
 
     expected = '<div map-id="iterative">
                       <h3>Grocery List</h3>
-                      <div map-id="listItems">
-                        <div map-id="0">
-                          <span map-id="name">banana</span>
+                      <div map-id="iterative.listItems">
+                        <div map-id="iterative.listItems.0">
+                          <span map-id="iterative.listItems.0.name">banana</span>
                           <span> - </span>
-                          <span map-id="qty">all of them</span>
+                          <span map-id="iterative.listItems.0.qty">all of them</span>
                         </div>
-                        <div map-id="1">
-                          <span map-id="name">apple</span>
+                        <div map-id="iterative.listItems.1">
+                          <span map-id="iterative.listItems.1.name">apple</span>
                           <span> - </span>
-                          <span map-id="qty">2</span>
+                          <span map-id="iterative.listItems.1.qty">2</span>
                         </div>
-                        <div map-id="2">
-                          <span map-id="name">oranges</span>
+                        <div map-id="iterative.listItems.2">
+                          <span map-id="iterative.listItems.2.name">oranges</span>
                           <span> - </span>
-                          <span map-id="qty">three</span>
+                          <span map-id="iterative.listItems.2.qty">three</span>
                         </div>
                       </div>
                     </div>'
@@ -36,14 +36,14 @@ QUnit.specify "template add", ->
         markup = ''
         newElement = ''
 
-        iterativeTemplate.apply model, (x) ->
+        iterativeTemplate.apply model, (id, op, x) ->
           markup = scrub(x.outerHTML)
 
-        iterativeTemplate.add("iterative.listItems", { name: "granola", qty: "one feedbag" }, (x) ->
+        iterativeTemplate.add("iterative.listItems", { name: "granola", qty: "one feedbag" }, (id, op, x) ->
           newElement = scrub(x[1].outerHTML) )
 
         setTimeout () ->
           assert(markup).equals scrub(expected)
-          assert(newElement).equals scrub('<div map-id="3"><span map-id="name">granola</span><span> - </span><span map-id="qty">one feedbag</span></div>')
+          assert(newElement).equals scrub('<div map-id="iterative.listItems.3"><span map-id="iterative.listItems.3.name">granola</span><span> - </span><span map-id="iterative.listItems.3.qty">one feedbag</span></div>')
           resume()
     )

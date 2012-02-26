@@ -34,7 +34,7 @@ Cartographer creates (and manages) template instances by mapping markup and JSON
 
 ### Examples
 
-Very simple:
+#### Very simple:
 
 	//template
 	<div>
@@ -58,7 +58,7 @@ Very simple:
 		</div>
 	</div>
 
-List:
+#### List:
 
 	//template
 	<div map-id="iterative">
@@ -147,8 +147,8 @@ To add a resolver, you can either append it to the end of the list or prepend it
 	// Appending adds it to the end of the chain (will always be searched last)
 	cartographer.resolver.append(shamefullySimple);
 
-	// Adding a resolve via Postal
-	postal.publish( "cartographer", "api.prepend.resolver|api.append.resolver", { resolver: shamefullySimple } );
+	// Adding a resolver via Postal
+	postal.publish( "cartographer", "api.resolver|api.resolver", { operation: "append|prepend", resolver: shamefullySimple } );
 
 ### Changing The Element Id Attribute
 
@@ -199,3 +199,97 @@ Cartographer has a number of dependencies which you must either include on your 
 If you happen to use require, here are the path aliases it expects:
 
 	'jQuery', 'underscore', 'postal', 'infuser', 'DOMBuilder'
+m
+
+
+# Postal Topology
+
+
+## Map
+    exchange            cartographer
+    topic               api
+#### Message Properties
+    template            template instance name
+    name                template
+    operation           "map"
+
+## Apply
+    exchange            cartographer
+    topic               api
+#### Message Properties
+    name                template instance id
+    model               object to base the render on
+    operation           "apply"
+### Responds With
+    exchange            cartographer
+    topic               render.{templateId}
+#### Message Properties
+    template            template instance id
+    markup              the generated DOM
+    operation           "render"
+
+## Add
+    exchange            cartographer
+    topic               api
+### Message
+    template            the template instance id
+    id                  the fully qualified id of the list control to add to
+    model               object to create the new item template from
+    operation           "add"
+### Responds With
+    exchange            cartographer
+    topic               render.{templateId}
+#### Message Properties
+    template            template instance id
+    parent              the fully qualified id for the parent
+    markup              the generated DOM for the new item
+    operation           "add"
+
+## Update
+    exchange            cartographer
+    topic               api
+#### Message Properties
+    template            the template instance id
+    id                  the fully qualified id of the control to update
+    model               object to update the control template with
+    operation           "update"
+### RespondsWith
+    exchange            cartographer
+    topic               render.{templateId}
+#### Message Properties
+    template            template instance id
+    id                  the fully qualified id of the item
+    markup              the generated DOM for the new item
+    operation           "update"
+
+## Append Resolver
+    exchange            cartographer
+    topic               api
+#### Message Properties
+    order               "append"
+    operation           "resolver"
+    resolver            callback in the form of function( name, onSuccess, onFailure )
+
+## Prepend Resolver
+    exchange            cartographer
+    topic               api
+#### Message Properties
+    order               "prepend"
+    operation           "resolver"
+    resolver            callback in the form of function( name, onSuccess, onFailure )
+
+## Watch Event
+    exchange            cartographer
+    topic               api
+#### Message Properties
+    operation           "watch"
+    template            template instance id
+    event               event to watch for
+
+## Ignore Event
+    exchange            cartographer
+    topic               api
+#### Message Properties
+    operation           "ignore"
+    template            template instance id
+    event               event to watch for

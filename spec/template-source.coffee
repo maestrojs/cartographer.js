@@ -1,11 +1,11 @@
 templates =
-  flat:                   '<div map-id="flat">
+  flat:                   '<div>
                             <h3>First Name</h3>
                             <span map-id="firstName"></span>
                             <h3>Last Name</h3>
                             <span map-id="lastName"></span>
                           </div>',
-  iterative:              '<div map-id="iterative">
+  iterative:              '<div>
                              <h3>Grocery List</h3>
                              <div map-id="listItems">
                                 <div>
@@ -13,7 +13,7 @@ templates =
                                 </div>
                              </div>
                           </div>',
-  nested:                 '<div map-id="nested">
+  nested:                 '<div>
                              <h3>Parent</h3>
                              <span map-id="firstName"></span><span> - </span>
                              <span map-id="lastName"></span>
@@ -23,7 +23,7 @@ templates =
                                <span map-id="lastName"></span>
                              </div>
                            </div>',
-  'parent-child':         '<div map-id="parent">
+  'parent-child':         '<div>
                              <h2>Parent Template</h2>
                              <div map-id="parentValue"></div>
                              <div map-id="childValue"></div>
@@ -32,7 +32,7 @@ templates =
                              <h2>Child Template</h2>
                              <div map-id="childValue"></div>
                            </div>',
-  'iterative-external':   '<div map-id="iterative-external">
+  'iterative-external':   '<div>
                              <h3>Grocery List</h3>
                              <div map-id="listItems">
                                 <span></span>

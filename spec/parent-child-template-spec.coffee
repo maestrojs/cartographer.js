@@ -8,14 +8,21 @@ QUnit.specify "parent-child template", ->
         __template__: "child"
         value: "This is the child value!"
 
-    parentChildTemplate = new Template 'parent-child', 'parent-child', model
+    parentChildTemplate = new Template 'parentChildTest', 'parent-child', model
 
-    expected = '<div map-id="parent"><h2>Parent Template</h2><div map-id="parentValue">This is the parent value!</div><div><h2>Child Template</h2><div map-id="childValue">This is the child value!</div></div></div>'
+    expected = '<div map-id="parentChildTest">
+                  <h2>Parent Template</h2>
+                  <div map-id="parentChildTest.parentValue">This is the parent value!</div>
+                  <div>
+                    <h2>Child Template</h2>
+                    <div map-id="parentChildTest.childValue">This is the child value!</div>
+                    </div>
+                  </div>'
 
     it "should produce the correct markup", async(() ->
 
         markup = ''
-        parentChildTemplate.apply model, (x) ->
+        parentChildTemplate.apply model, (id, op, x) ->
           markup = scrub(x.outerHTML)
 
         setTimeout () ->

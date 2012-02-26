@@ -16,15 +16,16 @@ Template = (id, name) ->
       false
 
   crawl = ( model, namespace, element, onDone, templates ) ->
-    if element.nodeType and element.nodeType != 1
+    if element and element.nodeType and element.nodeType != 1
       onDone () -> element
     else
       elementId = element?.attributes[configuration.elementIdentifier]?.value || ""
-      elementId = if elementId == self.name then "" else elementId
-      modelId = createFqn namespace, elementId, self.name, true
+      #elementId = if elementId == self.name or elementId == namespace == "" then self.id else elementId
+      modelId = (createFqn namespace, elementId, self.name, true) || self.id
       missingElement = not element
       template = externalTemplate(model, elementId) || self.name
       useTemplate = () -> ( not isCurrent(modelId, namespace) and externalTemplate(model, elementId) or missingElement)
+      namespace = if ! namespace or namespace == "" then self.id else namespace
       templateId = namespace + '.' + modelId
 
       onTemplate = (x) -> processElement model, namespace, x, onDone, templates
@@ -107,6 +108,8 @@ Template = (id, name) ->
     fqn = createFqn namespace, elementId, true, self.name
     tag = element.tagName.toUpperCase()
 
+    #console.log "Process element namespace for #{namespace} and #{elementId}: #{fqn}"
+
     # if this model / id maps to a model collection, check for external element templates
     template = externalItemTemplate(model, elementId)
     templateId = namespace + '.' + elementId
@@ -129,18 +132,14 @@ Template = (id, name) ->
 
   makeTag = (tag, template, fqn, id, val, root, model ) ->
     properties = {}
-    ###templateSource = if template.textContent then template.textContent else template.value
-    content = if (val?[id]) or (val and id) or template.children.length > 1 then ( val?[id] || val ) else templateSource
-    ###
     content = if _.isArray(val) and not _.isString(val) then val || val?[id] else val?[id] || val
     content = if template.children.length == 0 and id == undefined then template.textContent else content
-
     element = {}
 
-    console.log "#{tag} - #{fqn} - #{id} - #{val} - #{model}"
+    console.log "#{tag} - #{fqn} - #{id} - #{content}"
 
     if id or id == 0
-      properties[configuration.elementIdentifier] = id
+      properties[configuration.elementIdentifier] = fqn
 
     if template
       copyProperties template, properties, templateProperties
@@ -159,85 +158,29 @@ Template = (id, name) ->
         copyProperties model[id], element, modelTargets
     element
 
-  handleTemplateChange = (message) ->
-      control = self[message.key]
-      op = message.operation
-
-      lastIndex = message.key.lastIndexOf "."
-      parentKey = message.key.substring 0, lastIndex
-      childKey = message.key.substring ( lastIndex + 1 )
-
-      if op == "add"
-        addName = message.key + "_add"
-        if self.template[addName]
-          newElement = self.template[addName](
-            message.value,
-            parentKey,
-            childKey )
-          postal.publish(
-              "cartographer",
-              "markup.added",
-              {
-                operation: "added",
-                parent: parentKey,
-                markup: newElement
-              }
-          )
-          #$(self[parentKey]).append newElement
-      else if op = "change"
-        self.template[message.key](
-          message.value,
-          parentKey,
-          childKey,
-          (x) -> postal.publish(
-            "cartographer",
-            "markup.created",
-            {
-              operation: "created",
-              parent: parentKey,
-              markup: x
-            }
-          )
-        )
-
-
-
-  subscribe = ( ) ->
-    if self.changeSubscription != undefined
-      self.changeSubscription.unsubscribe()
-    self.changeSubscription = postal.subscribe(
-      "cartographer",
-      "template." + self.id + ".*",
-      handleTemplateChange
-    )
-
   wireUp = () ->
-    (self.watchEvent x) for x in self.watching
+    (self.watchEvent x.event, x.handler ) for x in self.watching
 
   @apply = (model, onResult) ->
-    crawl model, "", self.element, (x) ->
-      self.top = x( model, "" )
+    crawl model, self.id, self.element, (x) ->
+      self.top = x( model, self.id )
+      $(self.top).attr(configuration.elementIdentifier, self.id)
       wireUp()
-      onResult self.top
+      onResult self.id, "render", self.top
     , {}
 
-  @watchEvent = (eventName) ->
-    if self.top
+  @watchEvent = (eventName, onEvent) ->
+    if self.top #and not _.any(self.watching, (x) -> eventName == x.event )
       $(self.top).on eventName, (ev) ->
-        topic =
-          ev.target.attributes[configuration.elementIdentifier]?.value + '.' +
-          ev.type
-        postal.publish(
-          "cartographer." + self.id,
-          topic,
-          ev.target
-        )
-    self.watching.push eventName
+        elementId = ev.target.attributes[configuration.elementIdentifier]?.value
+        onEvent self.id, elementId, ev.target, ev.type
+    self.watching.push { event: eventName, handler: onEvent }
     self.watching = _.uniq( self.watching )
 
   @ignoreEvent = (eventName) ->
-    self.top.off eventname
-    self.watching = _.reject( self.watching, (x) -> x == eventName )
+    if self.top
+      self.top.off eventname
+    self.watching = _.reject( self.watching, (x) -> x.event == eventName )
 
   @update = (fqn, model, onResult) ->
     lastIndex = fqn.lastIndexOf "."
@@ -250,7 +193,7 @@ Template = (id, name) ->
         parentKey,
         childKey
       )
-      onResult newElement
+      onResult fqn, "update", newElement
 
   @add = (fqn, model, onResult) ->
     lastIndex = fqn.lastIndexOf "."
@@ -264,7 +207,7 @@ Template = (id, name) ->
         count,
         model
       )
-      onResult newElement
+      onResult fqn, "add", newElement
 
   @name = name
   @id = id
@@ -283,5 +226,4 @@ Template = (id, name) ->
       ,() ->
         console.log "No template could be found for #{name}"
   )
-  subscribe( )
   self
