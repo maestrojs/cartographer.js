@@ -131,8 +131,6 @@ Template = (id, name) ->
     content = if template.children.length == 0 and id == undefined then template.textContent else content
     element = {}
 
-    console.log "#{tag} - #{fqn} - #{id} - #{content}"
-
     if id or id == 0
       properties[configuration.elementIdentifier] = fqn
 

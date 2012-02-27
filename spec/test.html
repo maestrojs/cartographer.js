@@ -1,0 +1,415 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN"
+        "http://www.w3.org/TR/html4/loose.dtd">
+<html>
+<head>
+    <title></title>
+</head>
+<body>
+
+
+<script src="http://underscorejs.org/underscore-min.js">
+</script>
+<script src="http://ajax.googleapis.com/ajax/libs/jquery/1.7.1/jquery.min.js">
+</script>
+<script src="https://raw.github.com/ifandelse/postal.js/master/lib/browser/standard/postal.min.js">
+</script>
+<script src="https://raw.github.com/ifandelse/infuser/master/lib/standard/infuser.min.js">
+</script>
+<script src="https://raw.github.com/ifandelse/TrafficCop/master/lib/standard/TrafficCop.min.js">
+</script>
+<script src="https://raw.github.com/insin/DOMBuilder/master/dist/DOMBuilder.dom.min.js">
+</script>
+<script src="https://raw.github.com/arobson/cartographer.js/master/lib/cartographer.js">
+</script>
+<script>
+    setup = function() {
+    var templates;
+    templates = {
+        flat: '<div>\
+                                <h3>First Name</h3>\
+                                <span map-id="firstName"></span>\
+                                <h3>Last Name</h3>\
+                                <span map-id="lastName"></span>\
+                              </div>',
+        iterative: '<div>\
+                                 <h3>Grocery List</h3>\
+                                 <div map-id="listItems">\
+                                    <div>\
+                                      <span map-id="name"></span><span> - </span><span map-id="qty"></span>\
+                                    </div>\
+                                 </div>\
+                              </div>',
+        nested: '<div>\
+                                 <h3>Parent</h3>\
+                                 <span map-id="firstName"></span><span> - </span>\
+                                 <span map-id="lastName"></span>\
+                                 <div map-id="child">\
+                                   <h3>Child</h3>\
+                                   <span map-id="firstName"></span><span> - </span>\
+                                   <span map-id="lastName"></span>\
+                                 </div>\
+                               </div>',
+        'parent-child': '<div>\
+                                 <h2>Parent Template</h2>\
+                                 <div map-id="parentValue"></div>\
+                                 <div map-id="childValue"></div>\
+                               </div>',
+        child: '<div>\
+                                 <h2>Child Template</h2>\
+                                 <div map-id="childValue"></div>\
+                               </div>',
+        'iterative-external': '<div>\
+                                 <h3>Grocery List</h3>\
+                                 <div map-id="listItems">\
+                                    <span></span>\
+                                    Nothing to see here :(\
+                                 </div>\
+                              </div>',
+        'iterative-item': '<div>\
+                                 <span map-id="name"></span><span> - </span><span map-id="qty"></span>\
+                              </div>',
+        'interpol': $('<div><h3>O</h3>nce upon a time, there was a <span map-id="type"></span> named <span map-id="name"></span>.</div>')
+    };
+    window.scrub = function(x) {
+        return x.replace(/[ ]/g, "");
+    };
+    cartographer.resolver.prependSource(function(name, success, fail) {
+        if (templates[name]) {
+            return success(templates[name]);
+        } else {
+            return fail();
+        }
+    });
+
+    var shortList;
+    shortList = {
+        listItems: [
+            { name: "banana", qty: "all of them", __template__: 'iterative-item' },
+            { name: "banana", qty: "all of them" },
+            { name: "banana", qty: "all of them" },
+            { name: "banana", qty: "all of them" },
+            { name: "banana", qty: "all of them" },
+            { name: "banana", qty: "all of them" },
+            { name: "banana", qty: "all of them" },
+            { name: "banana", qty: "all of them" },
+            { name: "banana", qty: "all of them" },
+            { name: "banana", qty: "all of them" }
+        ]
+    };
+
+    var bigList;
+    bigList = {
+        listItems: [{
+            name: "banana",
+            qty: "all of them",
+            __template__: 'iterative-item'
+        }, {
+            name: "banana",
+            qty: "all of them"
+        }, {
+            name: "banana",
+            qty: "all of them"
+        }, {
+            name: "banana",
+            qty: "all of them"
+        }, {
+            name: "banana",
+            qty: "all of them"
+        }, {
+            name: "banana",
+            qty: "all of them"
+        }, {
+            name: "banana",
+            qty: "all of them"
+        }, {
+            name: "banana",
+            qty: "all of them"
+        }, {
+            name: "banana",
+            qty: "all of them"
+        }, {
+            name: "banana",
+            qty: "all of them"
+        }, {
+            name: "banana",
+            qty: "all of them"
+        }, {
+            name: "banana",
+            qty: "all of them"
+        }, {
+            name: "banana",
+            qty: "all of them"
+        }, {
+            name: "banana",
+            qty: "all of them"
+        }, {
+            name: "banana",
+            qty: "all of them"
+        }, {
+            name: "banana",
+            qty: "all of them"
+        }, {
+            name: "banana",
+            qty: "all of them"
+        }, {
+            name: "banana",
+            qty: "all of them"
+        }, {
+            name: "banana",
+            qty: "all of them"
+        }, {
+            name: "banana",
+            qty: "all of them"
+        }, {
+            name: "banana",
+            qty: "all of them"
+        }, {
+            name: "banana",
+            qty: "all of them"
+        }, {
+            name: "banana",
+            qty: "all of them"
+        }, {
+            name: "banana",
+            qty: "all of them"
+        }, {
+            name: "banana",
+            qty: "all of them"
+        }, {
+            name: "banana",
+            qty: "all of them"
+        }, {
+            name: "banana",
+            qty: "all of them"
+        }, {
+            name: "banana",
+            qty: "all of them"
+        }, {
+            name: "banana",
+            qty: "all of them"
+        }, {
+            name: "banana",
+            qty: "all of them"
+        }, {
+            name: "banana",
+            qty: "all of them"
+        }, {
+            name: "banana",
+            qty: "all of them"
+        }, {
+            name: "banana",
+            qty: "all of them"
+        }, {
+            name: "banana",
+            qty: "all of them"
+        }, {
+            name: "banana",
+            qty: "all of them"
+        }, {
+            name: "banana",
+            qty: "all of them"
+        }, {
+            name: "apple",
+            qty: "2"
+        }, {
+            name: "apple",
+            qty: "2"
+        }, {
+            name: "apple",
+            qty: "2"
+        }, {
+            name: "apple",
+            qty: "2"
+        }, {
+            name: "apple",
+            qty: "2"
+        }, {
+            name: "apple",
+            qty: "2"
+        }, {
+            name: "apple",
+            qty: "2"
+        }, {
+            name: "apple",
+            qty: "2"
+        }, {
+            name: "apple",
+            qty: "2"
+        }, {
+            name: "apple",
+            qty: "2"
+        }, {
+            name: "apple",
+            qty: "2"
+        }, {
+            name: "apple",
+            qty: "2"
+        }, {
+            name: "apple",
+            qty: "2"
+        }, {
+            name: "apple",
+            qty: "2"
+        }, {
+            name: "apple",
+            qty: "2"
+        }, {
+            name: "apple",
+            qty: "2"
+        }, {
+            name: "apple",
+            qty: "2"
+        }, {
+            name: "apple",
+            qty: "2"
+        }, {
+            name: "apple",
+            qty: "2"
+        }, {
+            name: "apple",
+            qty: "2"
+        }, {
+            name: "apple",
+            qty: "2"
+        }, {
+            name: "apple",
+            qty: "2"
+        }, {
+            name: "apple",
+            qty: "2"
+        }, {
+            name: "apple",
+            qty: "2"
+        }, {
+            name: "apple",
+            qty: "2"
+        }, {
+            name: "apple",
+            qty: "2"
+        }, {
+            name: "apple",
+            qty: "2"
+        }, {
+            name: "oranges",
+            qty: "three"
+        }, {
+            name: "oranges",
+            qty: "three"
+        }, {
+            name: "oranges",
+            qty: "three"
+        }, {
+            name: "oranges",
+            qty: "three"
+        }, {
+            name: "oranges",
+            qty: "three"
+        }, {
+            name: "oranges",
+            qty: "three"
+        }, {
+            name: "oranges",
+            qty: "three"
+        }, {
+            name: "oranges",
+            qty: "three"
+        }, {
+            name: "oranges",
+            qty: "three"
+        }, {
+            name: "oranges",
+            qty: "three"
+        }, {
+            name: "oranges",
+            qty: "three"
+        }, {
+            name: "oranges",
+            qty: "three"
+        }, {
+            name: "oranges",
+            qty: "three"
+        }, {
+            name: "oranges",
+            qty: "three"
+        }, {
+            name: "oranges",
+            qty: "three"
+        }, {
+            name: "oranges",
+            qty: "three"
+        }, {
+            name: "oranges",
+            qty: "three"
+        }, {
+            name: "oranges",
+            qty: "three"
+        }, {
+            name: "oranges",
+            qty: "three"
+        }, {
+            name: "oranges",
+            qty: "three"
+        }, {
+            name: "oranges",
+            qty: "three"
+        }, {
+            name: "oranges",
+            qty: "three"
+        }, {
+            name: "oranges",
+            qty: "three"
+        }, {
+            name: "oranges",
+            qty: "three"
+        }, {
+            name: "oranges",
+            qty: "three"
+        }, {
+            name: "oranges",
+            qty: "three"
+        }, {
+            name: "oranges",
+            qty: "three"
+        }, {
+            name: "oranges",
+            qty: "three"
+        }, {
+            name: "oranges",
+            qty: "three"
+        }, {
+            name: "oranges",
+            qty: "three"
+        }, {
+            name: "oranges",
+            qty: "three"
+        }, {
+            name: "oranges",
+            qty: "three"
+        }, {
+            name: "oranges",
+            qty: "three"
+        }, {
+            name: "oranges",
+            qty: "three"
+        }, {
+            name: "oranges",
+            qty: "three"
+        }, {
+            name: "oranges",
+            qty: "three"
+        }, {
+            name: "oranges",
+            qty: "three"
+        }, {
+            name: "oranges",
+            qty: "three"
+        }]
+    };
+};
+
+setup();
+</script>
+
+
+</body>
+</html>
