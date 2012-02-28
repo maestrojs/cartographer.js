@@ -23,7 +23,13 @@ QUnit.specify "flat template", ->
       flatTemplate.apply model, (id, op, x) ->
         markup = scrub(x.outerHTML)
 
-      setTimeout () ->
+      setTimeout (() ->
         assert(markup).equals scrub(expected)
         resume()
+        ), 200
       )
+###
+
+    <divmap-id="flat"><h3map-id="flat">FirstName</h3><spanmap-id="flat.firstName">Alex</span><h3map-id="flat">LastName</h3><spanmap-id="flat.lastName">Robson</span></div>
+    <divmap-id="flat"><h3>FirstName</h3><spanmap-id="flat.firstName">Alex</span><h3>LastName</h3><spanmap-id="flat.lastName">Robson</span></div>"
+  ###

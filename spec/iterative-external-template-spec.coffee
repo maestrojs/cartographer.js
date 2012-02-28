@@ -13,17 +13,17 @@ QUnit.specify "iterative external template", ->
     expected = '<div map-id="iterative">
                       <h3>Grocery List</h3>
                       <div map-id="iterative.listItems">
-                        <div map-id="iterative.listItems.0">
+                        <div>
                           <span map-id="iterative.listItems.0.name">banana</span>
                           <span> - </span>
                           <span map-id="iterative.listItems.0.qty">all of them</span>
                         </div>
-                        <div map-id="iterative.listItems.1">
+                        <div>
                           <span map-id="iterative.listItems.1.name">apple</span>
                           <span> - </span>
                           <span map-id="iterative.listItems.1.qty">2</span>
                         </div>
-                        <div map-id="iterative.listItems.2">
+                        <div>
                           <span map-id="iterative.listItems.2.name">oranges</span>
                           <span> - </span>
                           <span map-id="iterative.listItems.2.qty">three</span>

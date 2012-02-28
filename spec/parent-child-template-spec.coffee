@@ -29,3 +29,4 @@ QUnit.specify "parent-child template", ->
           assert(markup).equals scrub(expected)
           resume()
     )
+

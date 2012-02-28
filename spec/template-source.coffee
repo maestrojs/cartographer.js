@@ -26,7 +26,7 @@ templates =
   'parent-child':         '<div>
                              <h2>Parent Template</h2>
                              <div map-id="parentValue"></div>
-                             <div map-id="childValue"></div>
+                             <div template-id="child"></div>
                            </div>',
   child:                  '<div>
                              <h2>Child Template</h2>
@@ -42,7 +42,7 @@ templates =
   'iterative-item':      '<div>
                              <span map-id="name"></span><span> - </span><span map-id="qty"></span>
                           </div>',
-  'interpol':$           '<div><h3>O</h3>nce upon a time, there was a <span map-id="type"></span> named <span map-id="name"></span>.</div>'
+  'interpol':           '<div><h3>O</h3>nce upon a time, there was a <span map-id="type"></span> named <span map-id="name"></span>.</div>'
 
 
 window.scrub = (x) ->

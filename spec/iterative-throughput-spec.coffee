@@ -15,21 +15,21 @@ QUnit.specify "iterative throughput", ->
           { name: "oranges", qty: "three"},
         ]
 
-    iterativeTemplate = new Template 'iterative', 'iterative', model
+    iterativeTemplate = new Template 'iterative', 'iterative'
 
     started = new Date().getTime()
 
     it "should complete 100 iterations in under 1 second", async(() ->
+        total = 100
+        iterations = total
 
-        iterations = 1000
-
-        for i in [0..1000]
+        for i in [0..total]
           do () ->
             iterativeTemplate.apply model, (id, op, x) ->
               iterations = iterations - 1
               if iterations <= 0
                 elapsed = new Date().getTime() - started
                 console.log "#{elapsed} ms"
-                assert( elapsed < 100 ).isTrue()
+                assert( elapsed < total ).isTrue()
                 resume()
     )
