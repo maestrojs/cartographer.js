@@ -35,7 +35,7 @@ resolver = new SourceResolver()
 
 # add a page check method as the first source
 resolver.appendSource (name, success, fail) ->
-    template = $( '[' + configuration.elementIdentifier + '="' + name + '-template"]' )
+    template = $( '#' + name + '-template' )
     if template.length > 0
       success template[0]
     else

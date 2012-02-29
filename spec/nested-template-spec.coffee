@@ -8,25 +8,25 @@ QUnit.specify "nested template", ->
         firstName: "Dexter"
         lastName: "Robson"
 
-    nestedTemplate = new Template 'nested', 'nested', model
+    nestedTemplate = new Template 'nested'
 
-    expected = '<div map-id="nested">
+    expected = '<div data-id="nested">
                   <h3>Parent</h3>
-                  <span map-id="nested.firstName">Alex</span>
+                  <span data-id="nested.firstName">Alex</span>
                   <span> - </span>
-                  <span map-id="nested.lastName">Robson</span>
-                  <div map-id="nested.child">
+                  <span data-id="nested.lastName">Robson</span>
+                  <div data-id="nested.child">
                     <h3>Child</h3>
-                    <span map-id="nested.child.firstName">Dexter</span>
+                    <span data-id="nested.child.firstName">Dexter</span>
                     <span> - </span>
-                    <span map-id="nested.child.lastName">Robson</span>
+                    <span data-id="nested.child.lastName">Robson</span>
                   </div>
                 </div>'
 
     it "should produce the correct markup", async(() ->
 
         markup = ''
-        nestedTemplate.apply model, (id, op, x) ->
+        nestedTemplate.apply 'nested', model, (id, op, x) ->
           markup = scrub(x.outerHTML)
 
         setTimeout () ->

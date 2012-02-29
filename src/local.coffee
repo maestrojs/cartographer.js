@@ -1,3 +1,3 @@
 configuration =
-  elementIdentifier: 'map-id'
-  templateIdentifier: 'template-id'
+  elementIdentifier: 'data-id'
+  templateIdentifier: 'data-template'

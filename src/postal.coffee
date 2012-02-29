@@ -2,9 +2,10 @@ PostalSetup = () ->
   self = this
 
   @apply = (message) ->
+    name = message.name
     template = message.template
     model = message.model
-    cartographer.apply template, model, (
+    cartographer.apply name, template, model, (
       (id, op, markup) ->
         postal.publish "cartographer", "render.#{template}",
         template: template
@@ -19,7 +20,7 @@ PostalSetup = () ->
       )
 
   @map = (message) ->
-    cartographer.map message.template, message.name
+    cartographer.map message.name
 
   @resolver = (message) ->
     if message.order == "prepend"
@@ -31,8 +32,7 @@ PostalSetup = () ->
     templateId = message.template
     fqn = message.id
     model = message.model
-    template = cartographer.templates[templateId]
-    template.add fqn, model, (id, op, markup) ->
+    cartographer.add templateId, fqn, model, (id, op, markup) ->
       postal.publish "cartographer", "render.{templateId}",
         template: templateId
         parent: fqn
@@ -43,8 +43,7 @@ PostalSetup = () ->
     templateId = message.template
     fqn = message.id
     model = message.model
-    template = cartographer.templates[templateId]
-    template.update fqn, model, (id, op, markup) ->
+    cartographer.update templateId, fqn, model, (id, op, markup) ->
       postal.publish "cartographer", "render.{templateId}",
           template: templateId
           id: fqn
@@ -52,13 +51,15 @@ PostalSetup = () ->
           operation: "update"
 
   @watch = (message) ->
-    template = cartographer.templates[message.template]
-    template.watchEvent message.event, (template, elementId, element, event) ->
-      postal.publish "cartographer.#{template}", "#{elementId}.#{event}", { element: element }
+    cartographer.watchEvent(
+      message.template,
+      message.event,
+      (template, elementId, element, event) ->
+        postal.publish "cartographer.#{template}", "#{elementId}.#{event}", { element: element }
+    )
 
   @ignore = (message) ->
-    template = cartographer.templates[message.template]
-    template.ignoreEvent message.event
+    cartographer.ignoreEvent message.template, message.event
 
   postal.subscribe "cartographer", "api", (message, envelope) ->
     operation = message.operation

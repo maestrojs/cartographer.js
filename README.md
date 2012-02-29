@@ -12,7 +12,7 @@ Aside from simple markup generation, it also has more advanced features that are
 	* Automatic wire-up of Postal subscription convention to DOM events
 	* Targeted, partial generation
 	* Configurable element identifier
-		* The default attribute used to identify the element for Cartographer is "map-id"
+		* The default attribute used to identify the element for Cartographer is "data-id"
 		* You can change this very easily through a single configuration setting
 
 Cartographer will never inject markup onto the page. It only ever generates markup and makes it available through a callback or a Postal endpoint.
@@ -40,7 +40,7 @@ Cartographer creates (and manages) template instances by mapping markup and JSON
 	<div>
 		<h3>Simple</h3>
 		<div>
-			<span map-id="one"></span><span>, </span><span map-id="two"></span>
+			<span data-id="one"></span><span>, </span><span data-id="two"></span>
 		</div>
 	</div>
 
@@ -54,18 +54,18 @@ Cartographer creates (and manages) template instances by mapping markup and JSON
 	<div>
 		<h3>Simple</h3>
 		<div>
-			<span map-id="one">Hello</span><span>, </span><span map-id="two">World</span>
+			<span data-id="one">Hello</span><span>, </span><span data-id="two">World</span>
 		</div>
 	</div>
 
 #### List:
 
 	//template
-	<div map-id="iterative">
+	<div data-id="iterative">
 	 <h3>Grocery List</h3>
-	 <div map-id="listItems">
+	 <div data-id="listItems">
 		<div>
-		  <span map-id="name"></span><span> - </span><span map-id="qty"></span>
+		  <span data-id="name"></span><span> - </span><span data-id="qty"></span>
 		</div>
 	 </div>
 	</div>
@@ -82,15 +82,15 @@ Cartographer creates (and manages) template instances by mapping markup and JSON
 	//result
 	<div>
 		<h3>Grocery List</h3>
-		<div map-id="listItems">
-			<div map-id="0">
-				<span map-id="name">banana</span><span> - </span><span map-id="qty">all of them</span>
+		<div data-id="listItems">
+			<div data-id="0">
+				<span data-id="name">banana</span><span> - </span><span data-id="qty">all of them</span>
 			</div>
-			<div map-id="1">
-				<span map-id="name">apple</span><span> - </span><span map-id="qty">2</span>
+			<div data-id="1">
+				<span data-id="name">apple</span><span> - </span><span data-id="qty">2</span>
 			</div>
-			<div map-id="2">
-				<span map-id="name">oranges</span><span> - </span><span map-id="qty">three</span>
+			<div data-id="2">
+				<span data-id="name">oranges</span><span> - </span><span data-id="qty">three</span>
 			</div>
 		</div>
 	</div>
@@ -152,7 +152,7 @@ To add a resolver, you can either append it to the end of the list or prepend it
 
 ### Changing The Element Id Attribute
 
-By default, Cartographer uses 'map-id' as the means to identify and correlate a DOM element to your model. This can be changed as follows:
+By default, Cartographer uses 'data-id' as the means to identify and correlate a DOM element to your model. This can be changed as follows:
 
 	cartographer.config.elementIdentifier
 
@@ -209,7 +209,6 @@ m
     exchange            cartographer
     topic               api
 #### Message Properties
-    template            template instance name
     name                template
     operation           "map"
 
@@ -217,7 +216,8 @@ m
     exchange            cartographer
     topic               api
 #### Message Properties
-    name                template instance id
+	name                template name
+    template            template instance id
     model               object to base the render on
     operation           "apply"
 ### Responds With

@@ -18,10 +18,10 @@ require(
         'jquery',
         'underscore',
         'postal',
-        'postal.diagnostics',
+        //'postal.diagnostics',
         'infuser',
         'cartographer'],
-    function(require, $, _, postal, diag, infuser, cartographer) {
+    function(require, $, _, postal, infuser, cartographer) {
     var BuildIngredientList, BuildSteps, Ingredient, Recipe, Step, cart, dataBus, dom, recipe1, recipe2, recipes;
     dom = void 0;
     Ingredient = function(item, qty) {
@@ -89,35 +89,33 @@ require(
         postal.subscribe("cartographer", "render.*", function(message)
         {
             if( message.operation == "render" )
-                $( '[map-id="'+ message.template +'"]' ).fadeOut( 200, function() {
+                $( '[data-id="'+ message.template +'"]' ).fadeOut( 200, function() {
                     $(this).html(message.markup).fadeIn(300)
                 });
             else
 
-                $('[map-id="'+message.parent+'"]').append( message.markup );
+                $('[data-id="'+message.parent+'"]').append( message.markup );
         });
 
-        postal.publish("cartographer", "api", {
-            template: "recipe-list",
+        /*postal.publish("cartographer", "api", {
             name: "recipes",
-            model: recipes,
             operation: "map"
-        });
+        });*/
 
         postal.publish("cartographer", "api", {
-            template: "recipe",
             name: "recipe",
-            model: recipe1,
             operation: "map"
         });
 
-        postal.publish("cartographer", "api", {
+        /*postal.publish("cartographer", "api", {
+           name: "recipes",
            template: "recipe-list",
            model: recipes,
            operation: "apply"
-        });
+        });*/
 
         postal.publish("cartographer", "api", {
+            name: "recipe",
             template: "recipe",
             model: recipe1,
             operation: "apply"

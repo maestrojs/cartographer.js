@@ -8,25 +8,25 @@ QUnit.specify "iterative external template", ->
           { name: "oranges", qty: "three", __template__: 'iterative-item'},
         ]
 
-    iterativeExternalTemplate = new Template 'iterative', 'iterative-external', model
+    iterativeExternalTemplate = new Template 'iterative-external'
 
-    expected = '<div map-id="iterative">
+    expected = '<div data-id="iterative">
                       <h3>Grocery List</h3>
-                      <div map-id="iterative.listItems">
+                      <div data-id="iterative.listItems">
                         <div>
-                          <span map-id="iterative.listItems.0.name">banana</span>
+                          <span data-id="iterative.listItems.0.name">banana</span>
                           <span> - </span>
-                          <span map-id="iterative.listItems.0.qty">all of them</span>
+                          <span data-id="iterative.listItems.0.qty">all of them</span>
                         </div>
                         <div>
-                          <span map-id="iterative.listItems.1.name">apple</span>
+                          <span data-id="iterative.listItems.1.name">apple</span>
                           <span> - </span>
-                          <span map-id="iterative.listItems.1.qty">2</span>
+                          <span data-id="iterative.listItems.1.qty">2</span>
                         </div>
                         <div>
-                          <span map-id="iterative.listItems.2.name">oranges</span>
+                          <span data-id="iterative.listItems.2.name">oranges</span>
                           <span> - </span>
-                          <span map-id="iterative.listItems.2.qty">three</span>
+                          <span data-id="iterative.listItems.2.qty">three</span>
                         </div>
                       </div>
                     </div>'
@@ -34,10 +34,13 @@ QUnit.specify "iterative external template", ->
     it "should produce the correct markup", async(() ->
 
         markup = ''
-        iterativeExternalTemplate.apply model, (id, op, x) ->
+        iterativeExternalTemplate.apply 'iterative', model, (id, op, x) ->
           markup = scrub(x.outerHTML)
 
         setTimeout () ->
           assert(markup).equals scrub(expected)
+          assert(model.listItems[0].__template__).equals("iterative-item")
+          assert(model.listItems[1].__template__).equals("iterative-item")
+          assert(model.listItems[2].__template__).equals("iterative-item")
           resume()
     )

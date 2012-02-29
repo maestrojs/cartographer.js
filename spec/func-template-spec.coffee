@@ -5,22 +5,24 @@ QUnit.specify "flat template", ->
     model =
       firstName: "Alex"
       lastName: "Robson"
+      fullName: () -> "#{@.firstName}  #{@.lastName}"
 
 
-    flatTemplate = new Template 'flat'
+    flatTemplate = new Template 'func'
 
-    expected =                '<div data-id="flat">
+    expected =                '<div data-id="func">
+                                <h2 data-id="func.fullName">Alex Robson</h2>
                                 <h3>First Name</h3>
-                                <span data-id="flat.firstName">Alex</span>
+                                <span data-id="func.firstName">Alex</span>
                                 <h3>Last Name</h3>
-                                <span data-id="flat.lastName">Robson</span>
+                                <span data-id="func.lastName">Robson</span>
                               </div>'
 
     it "should produce the correct markup", async(() ->
 
       markup = ''
 
-      flatTemplate.apply 'flat', model, (id, op, x) ->
+      flatTemplate.apply 'func', model, (id, op, x) ->
         markup = scrub(x.outerHTML)
 
       setTimeout (() ->
