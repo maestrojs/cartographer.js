@@ -21,7 +21,9 @@ Template = (name) ->
   crawl = ( namespace, element, templates, onDone ) ->
 
     if element?.nodeType and element.nodeType != 1
-      onDone( () -> element.nodeValue )
+      onDone( () ->
+        arguments[4] element.nodeValue
+      )
     else
       template = elementTemplate(element) || (if not element then namespace else undefined )
       elementId = element?.attributes[configuration.elementIdentifier]?.value
@@ -60,7 +62,7 @@ Template = (name) ->
   buildCreateElement = ( element, elementId, elementFqn, childrenToCreate, templates ) ->
     #create closure around element creation
     tag = element.tagName.toUpperCase()
-    return ( instance, model, modelFqn, id ) ->
+    return ( instance, model, modelFqn, id, onElement ) ->
       newId = if id == undefined then elementId else id
       newFqn = createFqn modelFqn, newId, true, self.name
 
@@ -77,43 +79,61 @@ Template = (name) ->
         #delete templateSource.__template__
         templates[newFqn] = true
         if self.templates[template]
-
-          self.templates[template]( instance, model, modelFqn, id )
+          self.templates[template]( instance, model, modelFqn, id, onElement)
         else
           console.log "create element found template: #{template} and has #{JSON.stringify(templates)}"
-          callback = undefined
           handleTemplate(
             template,
             template,
-            (x) -> crawl elementFqn, x, templates, ( y ) ->
-                self.templates[template] = y
-                callback = y
+            (x) -> crawl elementFqn, x, templates, ( callback ) ->
+                self.templates[template] = callback
+                callback instance, model, modelFqn, id, onElement
           )
-          while not callback
-            setTimeout (() -> ), 0
-          callback instance, model, modelFqn, id
       else
           #if the value is a collection, we'll need to do our work iteratively
           if childrenToCreate and childrenToCreate.length > 0
             # if the current value is a collection
             collection = if val?.length then val else val?.items
             if collection and collection.length
-              list = []
               # create a method for adding new elements to this template collection
               children = childrenToCreate.slice(0)
               self.factories[newFqn + "_add"] = ( newIndex, newModel ) ->
-                factory( instance, newModel, newFqn, newIndex ) for factory in children
+                callback = arguments[4]
+                childList = []
+                onChildElement = (childElement) ->
+                  childList.push childElement
+                  if childList.length == childrenToCreate.length
+                    callback childList
+                factory( instance, newModel, newFqn, newIndex, onChildElement ) for factory in children
               # for each value in the collection
               # create the set of child elements for that value
+
+              outerList = []
+              list = []
+
+              onChildElement = (childElement) ->
+                list.push childElement
+                if list.length == childrenToCreate.length
+                  # get method for creating DOM element, store and return it
+                  outerList.push makeTag( tag, element, newFqn, newId, elementId != undefined, list, model, instance )
+                  list = []
+                  if outerList.length == collection.length
+                    onElement outerList
+
               for indx in [0..collection.length-1]
-                list.push ( factory( instance, collection, newFqn, indx, modelFqn ) for factory in childrenToCreate )
-              # get method for creating DOM element, store and return it
-              makeTag( tag, element, newFqn, newId, elementId != undefined, list, model, instance )
+                for factory in childrenToCreate
+                  factory( instance, collection, newFqn, indx, onChildElement )
+
             else # the current value is not a collection, but there are still child elements
-              controls = ( createElement( instance, val, newFqn, undefined, modelFqn ) for createElement in childrenToCreate )
-              makeTag( tag, element, newFqn, newId, elementId != undefined, controls, model, instance)
+              list = []
+              onChildElement = (childElement) ->
+                list.push childElement
+                if list.length == childrenToCreate.length
+                # get method for creating DOM element, store and return it
+                  onElement makeTag( tag, element, newFqn, newId, elementId != undefined, list, model, instance)
+              controls = ( createElement( instance, val, newFqn, undefined, onChildElement ) for createElement in childrenToCreate )
           else # this element has no children, it only holds the value
-            makeTag( tag, element, newFqn, newId, elementId != undefined, val, model, instance )
+            onElement makeTag( tag, element, newFqn, newId, elementId != undefined, val, model, instance )
 
   makeTag = (tag, originalElement, fqn, id, hasId, val, model, templateInstance ) ->
     properties = {}
@@ -124,7 +144,7 @@ Template = (name) ->
     if hasId
       properties[configuration.elementIdentifier] = fqn
       #console.log "#{tag} - #{fqn} - #{id} - #{val}, #{JSON.stringify(model)}"
-      console.log "#{tag} - #{fqn} - #{id} - #{val}"
+      #console.log "#{tag} - #{fqn} - #{id} - #{val}"
     if originalElement
       copyProperties originalElement, properties, templateProperties
     if tag == "INPUT"
@@ -154,11 +174,13 @@ Template = (name) ->
       if not self.ready
         self.deferredApplyCalls.push( () -> self.apply(id, model, onResult ) );
       else
-        result = self.render( id, model, id )
-        $(result).attr(configuration.elementIdentifier, id)
-        self.generated[id].top = result
-        wireUp(id)
-        onResult id, "render", result
+        result = self.render( id, model, id, undefined, (x) ->
+            element = $(x.toString())[0]
+            $(element).attr(configuration.elementIdentifier, id)
+            self.generated[id].top = element
+            wireUp(id)
+            onResult id, "render", element
+        )
 
   @watchEvent = (id, eventName, onEvent) ->
     if self.generated[id].top #and not _.any(self.watching, (x) -> eventName == x.event )
@@ -180,13 +202,16 @@ Template = (name) ->
     childKey = fqn.substring ( lastIndex + 1 )
 
     if self.factories[fqn]
-      newElement = self.factories[fqn](
+      self.factories[fqn](
         templateId
         model,
         parentKey,
-        childKey
+        childKey,
+        (dom) ->
+          markup = dom.toString()
+          newElement = $(markup)[0]
+          onResult fqn, "update", newElement
       )
-      onResult fqn, "update", newElement
 
   @add = (fqn, model, onResult) ->
     lastIndex = fqn.lastIndexOf "."
@@ -196,16 +221,21 @@ Template = (name) ->
 
     addName = fqn + "_add"
     if self.factories[addName]
-      count = self.generated[templateId][fqn].children.length
-      newElement = self.factories[addName](
+      count = $(self.generated[templateId][fqn].toString())[0].children.length
+      self.factories[addName](
         count,
-        model
+        model,
+        undefined,
+        undefined,
+        ((dom) ->
+          markup = dom.toString()
+          newElement = $(markup)[0]
+          onResult fqn, "add", newElement)
       )
-      onResult fqn, "add", newElement
 
   @name = name
   @fqn = ""
-  @html = DOMBuilder.dom
+  @html = DOMBuilder.html
   @templates = {}
   @generated = {}
   @changeSubscription = undefined

@@ -40,7 +40,7 @@ QUnit.specify "template add", ->
           markup = scrub(x.outerHTML)
 
         iterativeTemplate.add("iterative.listItems", { name: "granola", qty: "one feedbag" }, (id, op, x) ->
-          newElement = scrub(x[1].outerHTML) )
+          newElement = scrub(x.outerHTML) )
 
         setTimeout () ->
           assert(markup).equals scrub(expected)
