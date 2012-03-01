@@ -52,8 +52,7 @@ templates =
 
 
 window.scrub = (x) ->
-  x.replace(/\s/g, "")
-
+  $('<div />').html(x).html().replace(/\s/g, "")
 
 resolver.prependSource(
   (name, success, fail) ->

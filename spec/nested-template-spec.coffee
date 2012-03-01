@@ -27,7 +27,7 @@ QUnit.specify "nested template", ->
 
         markup = ''
         nestedTemplate.apply 'nested', model, (id, op, x) ->
-          markup = scrub(x.outerHTML)
+          markup = scrub(x)
 
         setTimeout () ->
           assert(markup).equals scrub(expected)

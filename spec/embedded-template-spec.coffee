@@ -15,8 +15,7 @@ QUnit.specify "embedded template", ->
       $( () ->
         flatTemplate = new Template 'page'
         flatTemplate.apply 'embedded-template', model, (id, op, x) ->
-          markup = x.outerHTML.replace(/\s/g, "")
-        console.log "#************************* #{$('#page-template').length} ***********************************"
+          markup = scrub(x)
       )
 
       setTimeout (() ->

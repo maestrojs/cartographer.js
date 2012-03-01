@@ -17,7 +17,7 @@ QUnit.specify "interpolation template", ->
 
         markup = ''
         interpolationTemplate.apply 'interpol', model, (id, op, x) ->
-          markup = scrub(x.outerHTML)
+          markup = scrub(x)
 
         setTimeout () ->
           assert(markup).equals scrub(expected)

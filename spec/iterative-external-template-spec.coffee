@@ -35,7 +35,7 @@ QUnit.specify "iterative external template", ->
 
         markup = ''
         iterativeExternalTemplate.apply 'iterative', model, (id, op, x) ->
-          markup = scrub(x.outerHTML)
+          markup = scrub(x)
 
         setTimeout () ->
           assert(markup).equals scrub(expected)

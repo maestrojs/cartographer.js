@@ -75,13 +75,11 @@ Template = (name) ->
 
       # if there's a template here, it takes the place of the current element
       if template
-        console.log "#{template}"
         #delete templateSource.__template__
         templates[newFqn] = true
         if self.templates[template]
           self.templates[template]( instance, model, modelFqn, id, onElement)
         else
-          console.log "create element found template: #{template} and has #{JSON.stringify(templates)}"
           handleTemplate(
             template,
             template,
@@ -91,41 +89,44 @@ Template = (name) ->
           )
       else
           #if the value is a collection, we'll need to do our work iteratively
-          if childrenToCreate and childrenToCreate.length > 0
+          childrenToCreateCount = childrenToCreate.length
+          if childrenToCreate and childrenToCreateCount > 0
             # if the current value is a collection
             collection = if val?.length then val else val?.items
-            if collection and collection.length
+            collectionCount = collection?.length
+            if collection and collectionCount
               # create a method for adding new elements to this template collection
               children = childrenToCreate.slice(0)
               self.factories[newFqn + "_add"] = ( newIndex, newModel ) ->
                 callback = arguments[4]
-                childList = []
+                childList = new Array(childrenToCreate)
+                childIndex = 0
                 onChildElement = (childElement) ->
-                  childList.push childElement
-                  if childList.length == childrenToCreate.length
+                  childList[childIndex++] = childElement
+                  if childIndex == childrenToCreateCount
                     callback childList
                 factory( instance, newModel, newFqn, newIndex, onChildElement ) for factory in children
               # for each value in the collection
               # create the set of child elements for that value
 
-              total = childrenToCreate.length * collection.length
-              list = []
-
+              total = childrenToCreateCount * collectionCount
+              list = new Array(total)
+              listIndex = 0
               onChildElement = (childElement) ->
-                list.push childElement
-                # get method for creating DOM element, store and return it
-                if list.length == total
+                list[listIndex++] = childElement
+                if listIndex == total
                   onElement makeTag( tag, element, newFqn, newId, elementId != undefined, list, model, instance )
 
-              for indx in [0..collection.length-1]
+              for indx in [0..collectionCount-1]
                 for factory in childrenToCreate
                   factory( instance, collection, newFqn, indx, onChildElement )
 
             else # the current value is not a collection, but there are still child elements
-              list = []
+              list = new Array(childrenToCreateCount)
+              listIndex = 0
               onChildElement = (childElement) ->
-                list.push childElement
-                if list.length == childrenToCreate.length
+                list[listIndex++] = childElement
+                if listIndex == childrenToCreateCount
                 # get method for creating DOM element, store and return it
                   onElement makeTag( tag, element, newFqn, newId, elementId != undefined, list, model, instance)
               controls = ( createElement( instance, val, newFqn, undefined, onChildElement ) for createElement in childrenToCreate )
