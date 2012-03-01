@@ -141,7 +141,6 @@ Template = (name) ->
 
     if hasId
       properties[configuration.elementIdentifier] = fqn
-      #console.log "#{tag} - #{fqn} - #{id} - #{val}, #{JSON.stringify(model)}"
       #console.log "#{tag} - #{fqn} - #{id} - #{val}"
     if originalElement
       copyProperties originalElement, properties, templateProperties
@@ -173,7 +172,8 @@ Template = (name) ->
         self.deferredApplyCalls.push( () -> self.apply(id, model, onResult ) );
       else
         result = self.render( id, model, id, undefined, (x) ->
-            element = $(x.toString())[0]
+            #element = $(x.toString())[0]
+            element = $(x)[0]
             $(element).attr(configuration.elementIdentifier, id)
             self.generated[id].top = element
             wireUp(id)
@@ -205,10 +205,10 @@ Template = (name) ->
         model,
         parentKey,
         childKey,
-        (dom) ->
-          markup = dom.toString()
-          newElement = $(markup)[0]
-          onResult fqn, "update", newElement
+        ((dom) ->
+          #markup = dom.toString()
+          newElement = $(dom)[0]
+          onResult fqn, "update", newElement)
       )
 
   @add = (fqn, model, onResult) ->
@@ -219,21 +219,22 @@ Template = (name) ->
 
     addName = fqn + "_add"
     if self.factories[addName]
-      count = $(self.generated[templateId][fqn].toString())[0].children.length
+      #count = $(self.generated[templateId][fqn].toString())[0].children.length
+      count = $(self.generated[templateId][fqn])[0].children.length
       self.factories[addName](
         count,
         model,
         undefined,
         undefined,
         ((dom) ->
-          markup = dom.toString()
-          newElement = $(markup)[0]
+          #dom = markup.toString()
+          newElement = $(dom)[1]
           onResult fqn, "add", newElement)
       )
 
   @name = name
   @fqn = ""
-  @html = DOMBuilder.html
+  @html = DOMBuilder.dom
   @templates = {}
   @generated = {}
   @changeSubscription = undefined
