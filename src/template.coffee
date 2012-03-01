@@ -108,17 +108,14 @@ Template = (name) ->
               # for each value in the collection
               # create the set of child elements for that value
 
-              outerList = []
+              total = childrenToCreate.length * collection.length
               list = []
 
               onChildElement = (childElement) ->
                 list.push childElement
-                if list.length == childrenToCreate.length
-                  # get method for creating DOM element, store and return it
-                  outerList.push makeTag( tag, element, newFqn, newId, elementId != undefined, list, model, instance )
-                  list = []
-                  if outerList.length == collection.length
-                    onElement outerList
+                # get method for creating DOM element, store and return it
+                if list.length == total
+                  onElement makeTag( tag, element, newFqn, newId, elementId != undefined, list, model, instance )
 
               for indx in [0..collection.length-1]
                 for factory in childrenToCreate
