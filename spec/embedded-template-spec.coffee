@@ -21,6 +21,5 @@ QUnit.specify "embedded template", ->
       setTimeout (() ->
         assert(markup).equals scrub(expected)
         resume()
-      ), 400
+      ), 10
     )
-
