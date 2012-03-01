@@ -97,22 +97,22 @@ require(
                 $('[data-id="'+message.parent+'"]').append( message.markup );
         });
 
-        /*postal.publish("cartographer", "api", {
+        postal.publish("cartographer", "api", {
             name: "recipes",
             operation: "map"
-        });*/
+        });
 
         postal.publish("cartographer", "api", {
             name: "recipe",
             operation: "map"
         });
 
-        /*postal.publish("cartographer", "api", {
+        postal.publish("cartographer", "api", {
            name: "recipes",
            template: "recipe-list",
            model: recipes,
            operation: "apply"
-        });*/
+        });
 
         postal.publish("cartographer", "api", {
             name: "recipe",

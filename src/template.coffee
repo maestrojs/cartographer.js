@@ -1,6 +1,14 @@
 Template = (name) ->
   self = this
 
+# conditionally combine the current namespace and the current element id
+  createFqn = ( namespace, id, name, filterName ) ->
+    newNs = namespace || ""
+    newId = if id == undefined then "" else id
+    delimiter = if newNs != "" and newId != "" then "." else ""
+    result = "#{newNs}#{delimiter}#{newId}"
+    result
+
   handleTemplate = ( template, templateId, onTemplate ) ->
     if self.templates[templateId]
       onTemplate self.templates[templateId]
@@ -141,22 +149,21 @@ Template = (name) ->
 
     if hasId
       properties[configuration.elementIdentifier] = fqn
-      #console.log "#{tag} - #{fqn} - #{id} - #{val}"
-    if originalElement
-      copyProperties originalElement, properties, templateProperties
+    if originalElement["className"]
+      properties["class"] = originalElement["className"]
+    if originalElement["type"]
+      properties["type"] = originalElement["type"]
+    if originalElement["value"]
+      properties["value"] = originalElement["value"]
+    if originalElement["id"]
+      properties["id"] = originalElement["id"]
+
     if tag == "INPUT"
       if not _.isObject content
         properties.value = content
       element = self.html[tag]( properties )
     else
       element = self.html[tag]( properties, content )
-
-
-    if model?[id]
-      if val instanceof Array
-        copyProperties model[id], element, modelTargetsForCollections
-      else
-        copyProperties model[id], element, modelTargets
 
     if hasId
       self.generated[templateInstance][fqn] = element
