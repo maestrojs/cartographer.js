@@ -6,7 +6,7 @@ PostalSetup = () ->
     template = message.template
     model = message.model
     cartographer.apply name, template, model, (
-      (id, op, markup) ->
+      (id, markup, op) ->
         postal.publish "cartographer", "render.#{template}",
         template: template
         markup: markup
@@ -32,7 +32,7 @@ PostalSetup = () ->
     templateId = message.template
     fqn = message.id
     model = message.model
-    cartographer.add templateId, fqn, model, (id, op, markup) ->
+    cartographer.add templateId, fqn, model, (id,markup, op) ->
       postal.publish "cartographer", "render.{templateId}",
         template: templateId
         parent: fqn
@@ -43,7 +43,7 @@ PostalSetup = () ->
     templateId = message.template
     fqn = message.id
     model = message.model
-    cartographer.update templateId, fqn, model, (id, op, markup) ->
+    cartographer.update templateId, fqn, model, (id, markup, op) ->
       postal.publish "cartographer", "render.{templateId}",
           template: templateId
           id: fqn

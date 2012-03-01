@@ -180,7 +180,7 @@ Template = (name) ->
             self.templates[id] = element
             $(element).attr(configuration.elementIdentifier, id)
             wireUp(id)
-            onResult id, "render", element
+            onResult id, element, "render"
         )
 
   @watchEvent = (id, eventName, onEvent) ->
@@ -210,7 +210,7 @@ Template = (name) ->
         childKey,
         ((dom) ->
           newElement = $(dom)[0]
-          onResult fqn, "update", newElement)
+          onResult fqn, newElement), "update"
       )
 
   @add = (fqn, model, onResult) ->
@@ -225,7 +225,7 @@ Template = (name) ->
         undefined,
         ((dom) ->
           newElement = $(dom)[1]
-          onResult fqn, "add", newElement)
+          onResult fqn, newElement), "add"
       )
 
   @name = name

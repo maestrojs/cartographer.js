@@ -1,154 +1,66 @@
 # Cartographer
+Cartographer is an HTML templating engine that works with plain HTML and simple JSON. It does this by inferring intention based on the structure of the markup and JSON. Cartographer will never place the generated markup on the page, it hands it back to the provided callback.
 
-Cartographer is an HTML templating engine that works with plain HTML and simple JSON. It does this by inferring intention based on the structure of the markup and JSON.
-
-Aside from simple markup generation, it also has more advanced features that are at various stages of completion. Here's a quick feature list:
-
-	* Markup generation from HTML files and JSON
-	* A flexible way to define resolvers for HTML templates
-		* Built-in source checks the page for template first
-		* Built-in integration with infuser which is checked second
-	* Integration with Postal for messaging
-	* Automatic wire-up of Postal subscription convention to DOM events
-	* Targeted, partial generation
-	* Configurable element identifier
-		* The default attribute used to identify the element for Cartographer is "data-id"
-		* You can change this very easily through a single configuration setting
-
-Cartographer will never inject markup onto the page. It only ever generates markup and makes it available through a callback or a Postal endpoint.
+Though Cartographer's performance should be sufficient for most applications, several trade-offs were made in order to make the advanced features (not provided by the majority of other template engines) possible.
 
 ## Philosophy
+I wanted to create a templating engine that would compliment more complex, asynchronous applications in the browser. Cartographer's APIs are built to provide responses to user provided callbacks. It has been designed to be complimentary with other OSS JS Libraries that encourage decoupled application design: (infuser, postal and machina specifically).
 
-I wanted to create a templating engine that would compliment more complex, asynchronous applications in the browser. Cartographer has been built to have synergy with libraries that Jim Cowart has written, specifically:
+## Advanced Features
+* Generate partial templates
+* Nest templates
+* Specify external templates in the markup or the model
+* Generate new markup for new collection items
+* Fully qualified namespacing for elements that map to the model
+* A flexible way to define custom sources for templates
+* Event handling through delegation to the top level element of the rendered instance
+* Integration with Postal for messaging
+	* all API methods supported through Postal topography
+	* Convention for auto-wiring topic subscriptions that correlate with template control/event to DOM event
+* Configurable element identifier
+	* The default attribute used to identify the element for Cartographer is "data-id"
+* Configurable template attribute
+	* The default attribute used to specify a replacement template is "data-template"
 
-	* Postal - messaging
-	* Infuser - fetching external templates
-	* Aribiter - finite state machine implementation
+## Concepts
+Cartographer creates named templates based on the name of the template source. If your source is an external file, the name of the template is the name of the file. If the source of the template is a DOM element then the data-template property would match the template name.
 
-It is my intention to provide declarative conventions and idioms for DOM interaction with the rest of the application that are easy to tailor to the application's needs.
+Once the template has been created, it can be used to create instances which must be uniquely identified (more on why later). The rendered instance is give fully qualified, hierarchical namespaces for all of the controls that had a data-id (mapped to a model property).
 
-## Use
+Partial renders can be done as an add or update. Adding is intended to support rendered a specific item template for a collection when new elements are added to the model that produced the original render. Updates allow you to regenerate the template, starting at any level, in order to get updated markup for the section of the template that should be reproduced.
 
-Cartographer creates (and manages) template instances by mapping markup and JSON. You can either make direct API calls
- against the object or integrate with it via Postal (or any combination you like).
+## API
 
-### Examples
+### Map - cartographer.map(templateName)
+Creates a template from a named HTML source that will be used to generate markup from JSON.
 
-#### Very simple:
+### Apply - cartographer.apply( templateName, templateId, model, onMarkup )
+Renders the templateName and assigns the rendered instance templateId. The template instance id becomes the top of the fqn for all controls in the rendered instance. onMarkup is a function with 3 arguments: template id, markup and operation ( included for integration purposes ).
 
-	//template
-	<div>
-		<h3>Simple</h3>
-		<div>
-			<span data-id="one"></span><span>, </span><span data-id="two"></span>
-		</div>
-	</div>
+### Add - cartographer.add( templateId, containerControlFqn, model, onMarkup )
+Adding creates a new set of markup for an existing template / model collection. The containerControlFqn is the fully qualified name of the containing list control. The other arguments are like the 'apply' call.
 
-	// model
-	{
-		one: "Hello",
-		two: "World"
-	}
+### Update - cartographer.update( templateId, targetFqn, model, onMarkup )
+Updating creates a new render at any level in the template hierarchy. The targetFqn is the level of the DOM template where the render should begin.
 
-	//result
-	<div>
-		<h3>Simple</h3>
-		<div>
-			<span data-id="one">Hello</span><span>, </span><span data-id="two">World</span>
-		</div>
-	</div>
+### Watch Event - cartographer.watchEvent( templateId, event, onEvent )
+Watching an event attaches a top-level, delegated, event handler to the parent element of the rendered instance. The event name and handler behave as expected. The event handlers are cached so that even in the event of an additional render of the instance or a delay in rendering, the events are wired up once the top element is available.
 
-#### List:
+The onEvent callback gets the following arguments:
+ * The template instance id
+ * The control fqn
+ * The original element the event triggered for
+ * The event name that triggered
 
-	//template
-	<div data-id="iterative">
-	 <h3>Grocery List</h3>
-	 <div data-id="listItems">
-		<div>
-		  <span data-id="name"></span><span> - </span><span data-id="qty"></span>
-		</div>
-	 </div>
-	</div>
+### Ignore Event - cartographer( templateId, event )
+Removes a previously attached event.
 
-	// model
-	{
-		listItems: [
-		  { name: "banana", qty: "all of them" },
-		  { name: "apple", qty: "2"},
-		  { name: "oranges", qty: "three"},
-		]
-	}
-
-	//result
-	<div>
-		<h3>Grocery List</h3>
-		<div data-id="listItems">
-			<div data-id="0">
-				<span data-id="name">banana</span><span> - </span><span data-id="qty">all of them</span>
-			</div>
-			<div data-id="1">
-				<span data-id="name">apple</span><span> - </span><span data-id="qty">2</span>
-			</div>
-			<div data-id="2">
-				<span data-id="name">oranges</span><span> - </span><span data-id="qty">three</span>
-			</div>
-		</div>
-	</div>
-
-
-### Creating a Template Instance
-
-There are two ways to create a template:
-
-	// Creating a template
-	cartographer.map( "{instance id}", "{template name}" );
-
-	// Using Postal
-	postal.publish( "cartographer", "api.map", { id: "{instance id}", name: "{template name}" } );
-
-The instance id is what you will address the template with while the template name is the markup template as it will be searched for by the available template resolvers.
-
-### Generating Markup With Templates and JSON
-
-Once you have created a template instance, you can produce markup in one of three ways:
-
-	// Requesting markup and handling it yourself
-	cartographer.apply( "{instance id}", jsonObject,
-		function(markup) { /* on success you get a DOM element */ },
-		function(error) { /* on failure you get a DOM element */ }
-	);
-
-	// Requesting markup without handlers
-	cartographer.apply( "{instance id"}, jsonObject );
-
-		/* OR */
-
-	// Using Postal
-	postal.publish( "cartographer", "api.apply", { id: "{instance id}", model: jsonObject } );
-
-	/* BOTH produce results via Postal
-
-	postal.subscribe("cartographer", "render.{instance id}", function( message, envelope ) {
-		if( envelop.topic.match(/{instance id}$/ ) { /* successs */ }
-		else { /* failure */ }
-	});
-
-### Adding Template Resolvers
-
+### Adding Template Resolvers - cartographer.resolver.appendSource|prependSource( resolverFunction )
 Cartographer looks for the HTML using the template name. It searches its resolvers, in order, and by default has resolvers for in-page and infuser. If you glance at template-source.coffee under the spec folder, you'll see that it's trivial to create these and provide markup from any source you like.
 
-To add a resolver, you can either append it to the end of the list or prepend it to the beginning using the API or Postal:
+You can add a resolver and control when it will be checked by either appending or prepending your resolver to the list.
 
-	var shamefullySimple = function(name, onSuccess, onFail) { onSuccess("<div>Worst template ever!</div>"); };
-
-	// Prepending adds the source to the front of the chain (will always be searched first )
-	cartographer.resolver.prepend(shamefullySimple);
-
-	// Appending adds it to the end of the chain (will always be searched last)
-	cartographer.resolver.append(shamefullySimple);
-
-	// Adding a resolver via Postal
-	postal.publish( "cartographer", "api.resolver|api.resolver", { operation: "append|prepend", resolver: shamefullySimple } );
+The resolver has the signature function(name, success, fail). It uses the name argument to search for an HTML template based on the name and calls success with the HTML when it's found or fail when something tanks.
 
 ### Changing The Element Id Attribute
 
@@ -156,40 +68,11 @@ By default, Cartographer uses 'data-id' as the means to identify and correlate a
 
 	cartographer.config.elementIdentifier
 
-### Markup Hierarchy
 
-As Cartographer is generating markup, it attempts to produce unique, internal namespaces for each
+## Examples
+Currently, there aren't a lot of great examples but the unit tests actually show all of the features except for eventing.
 
 
-## Advanced Features
-
-Many of these are in early stages of maturity and you should think of most of them as being largely experimental.
-
-### Element Attributes
-
-By default, Cartographer will copy over all attributes from the template to the generated elements. Most attributes can be overridden in the model by nesting the attribute hash and the original property value below the actual model property.
-
-	// Simple example of a normal model property
-	{
-		property: value
-	};
-
-	//Nesting the value to get additional control over the element that maps to this same id
-	{
-		property: {
-			value: value,
-			class: "special-class"
-		}
-	};
-
-	//Setting a specific template up to replace the default DOM element
-	//Not quite ready for mainstream use
-	{
-		property: {
-			value: value,
-			__template__: "specialTemplate"
-		}
-	};
 
 
 ## Dependencies
@@ -199,7 +82,6 @@ Cartographer has a number of dependencies which you must either include on your 
 If you happen to use require, here are the path aliases it expects:
 
 	'jQuery', 'underscore', 'postal', 'infuser', 'DOMBuilder'
-m
 
 
 # Postal Topology
