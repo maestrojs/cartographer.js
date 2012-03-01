@@ -165,8 +165,6 @@ Template = (name) ->
     else
       element = self.html[tag]( properties, content )
 
-    if hasId
-      self.generated[templateInstance][fqn] = element
     element
 
   wireUp = (id) ->
@@ -174,67 +172,58 @@ Template = (name) ->
 
   @apply = (id, originalModel, onResult) ->
       model = $.extend(true, {}, originalModel);
-      self.generated[id] = {}
       if not self.ready
         self.deferredApplyCalls.push( () -> self.apply(id, model, onResult ) );
       else
         result = self.render( id, model, id, undefined, (x) ->
-            #element = $(x.toString())[0]
             element = $(x)[0]
+            self.templates[id] = element
             $(element).attr(configuration.elementIdentifier, id)
-            self.generated[id].top = element
             wireUp(id)
             onResult id, "render", element
         )
 
   @watchEvent = (id, eventName, onEvent) ->
-    if self.generated[id].top #and not _.any(self.watching, (x) -> eventName == x.event )
-      $(self.generated[id].top).on eventName, (ev) ->
+    top = self.templates[id]
+    if top
+      $(top).on eventName, (ev) ->
         elementId = ev.target.attributes[configuration.elementIdentifier]?.value
-        onEvent self.id, elementId, ev.target, ev.type
+        onEvent id, elementId, ev.target, ev.type
     self.watching.push { event: eventName, handler: onEvent }
     self.watching = _.uniq( self.watching )
 
   @ignoreEvent = (id, eventName) ->
-    if self.generated[id].top
-      self.generated[id].top.off eventname
+    top = self.templates[id]
+    if top
+      $(top).off eventname
     self.watching = _.reject( self.watching, (x) -> x.event == eventName )
 
   @update = (fqn, model, onResult) ->
     lastIndex = fqn.lastIndexOf "."
-    templateId = fqn.split('.')[0]
     parentKey = fqn.substring 0, lastIndex
     childKey = fqn.substring ( lastIndex + 1 )
-
     if self.factories[fqn]
       self.factories[fqn](
-        templateId
+        parentKey,
         model,
         parentKey,
         childKey,
         ((dom) ->
-          #markup = dom.toString()
           newElement = $(dom)[0]
           onResult fqn, "update", newElement)
       )
 
   @add = (fqn, model, onResult) ->
-    lastIndex = fqn.lastIndexOf "."
-    templateId = fqn.split('.')[0]
-    parentKey = fqn.substring 0, lastIndex
-    childKey = fqn.substring ( lastIndex + 1 )
-
     addName = fqn + "_add"
     if self.factories[addName]
-      #count = $(self.generated[templateId][fqn].toString())[0].children.length
-      count = $(self.generated[templateId][fqn])[0].children.length
+      listContainer = $("[#{configuration.elementIdentifier}=\"#{fqn}\"]" )
+      count = if listContainer.length > 0 then listContainer[0].children.length else 0
       self.factories[addName](
         count,
         model,
         undefined,
         undefined,
         ((dom) ->
-          #dom = markup.toString()
           newElement = $(dom)[1]
           onResult fqn, "add", newElement)
       )
@@ -243,7 +232,6 @@ Template = (name) ->
   @fqn = ""
   @html = DOMBuilder.dom
   @templates = {}
-  @generated = {}
   @changeSubscription = undefined
   @watching = []
   @deferredApplyCalls = []
