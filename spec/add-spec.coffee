@@ -44,6 +44,6 @@ QUnit.specify "template add", ->
 
         setTimeout () ->
           assert(markup).equals scrub(expected)
-          assert(newElement).equals scrub('<div><span data-id="iterative.listItems.3.name">granola</span><span> - </span><span data-id="iterative.listItems.3.qty">one feedbag</span></div>')
+          assert(newElement).equals scrub('<div><span data-id="iterative.listItems.0.name">granola</span><span> - </span><span data-id="iterative.listItems.0.qty">one feedbag</span></div>')
           resume()
     )
