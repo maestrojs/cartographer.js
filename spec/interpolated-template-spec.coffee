@@ -16,7 +16,7 @@ QUnit.specify "interpolation template", ->
     it "should produce the correct markup", async(() ->
 
         markup = ''
-        interpolationTemplate.apply 'interpol', model, (id, op, x) ->
+        interpolationTemplate.apply 'interpol', model, (id, x, op) ->
           markup = scrub(x)
 
         setTimeout () ->

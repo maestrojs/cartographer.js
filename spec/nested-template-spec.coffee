@@ -26,7 +26,7 @@ QUnit.specify "nested template", ->
     it "should produce the correct markup", async(() ->
 
         markup = ''
-        nestedTemplate.apply 'nested', model, (id, op, x) ->
+        nestedTemplate.apply 'nested', model, (id, x, op) ->
           markup = scrub(x)
 
         setTimeout () ->

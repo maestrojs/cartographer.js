@@ -22,7 +22,7 @@ QUnit.specify "flat template", ->
 
       markup = ''
 
-      flatTemplate.apply 'func', model, (id, op, x) ->
+      flatTemplate.apply 'func', model, (id, x, op) ->
         markup = scrub(x)
 
       setTimeout (() ->

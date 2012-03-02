@@ -14,7 +14,7 @@ QUnit.specify "embedded template", ->
       markup = ''
       $( () ->
         flatTemplate = new Template 'page'
-        flatTemplate.apply 'embedded-template', model, (id, op, x) ->
+        flatTemplate.apply 'embedded-template', model, (id, x, op) ->
           markup = scrub(x)
       )
 

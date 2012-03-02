@@ -25,7 +25,7 @@ QUnit.specify "iterative throughput", ->
 
         for i in [0..total]
           do () ->
-            iterativeTemplate.apply 'iterative', model, (id, op, x) ->
+            iterativeTemplate.apply 'iterative', model, (id, x, op) ->
               if iterations-- <= 0
                 elapsed = new Date().getTime() - started
                 console.log "#{elapsed} ms"

@@ -21,12 +21,12 @@ QUnit.specify "template change", ->
         markup = ''
         newElement = ''
 
-        flatTemplate.apply 'flat', model, (id, op, x) ->
+        flatTemplate.apply 'flat', model, (id, x, op) ->
           markup = scrub(x)
 
         setTimeout () ->
           flatTemplate.update('flat.lastName', { lastName: 'Trebec'},
-            (id, op, x) -> newElement = scrub(x)
+            (id, x, op) -> newElement = scrub(x)
           )
           assert(newElement).equals scrub('<span data-id="flat.lastName">Trebec</span>')
           resume()

@@ -36,14 +36,14 @@ QUnit.specify "template add", ->
         markup = ''
         newElement = ''
 
-        iterativeTemplate.apply 'iterative', model, (id, op, x) ->
+        iterativeTemplate.apply 'iterative', model, (id, x, op) ->
           markup = scrub(x)
 
-        iterativeTemplate.add("iterative.listItems", { name: "granola", qty: "one feedbag" }, (id, op, x) ->
+        iterativeTemplate.add("iterative.listItems", { name: "granola", qty: "one feedbag" }, (id, x, op) ->
           newElement = scrub(x) )
 
         setTimeout () ->
           assert(markup).equals scrub(expected)
-          assert(newElement).equals scrub('<div><span data-id="iterative.listItems.0.name">granola</span><span> - </span><span data-id="iterative.listItems.0.qty">one feedbag</span></div>')
+          assert(newElement).equals scrub('<div><span data-id="iterative.listItems.3.name">granola</span><span> - </span><span data-id="iterative.listItems.3.qty">one feedbag</span></div>')
           resume()
     )
