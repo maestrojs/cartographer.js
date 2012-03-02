@@ -60,6 +60,7 @@ require(
       recipe = {
         title: Title,
         __template__: "recipe",
+        image: "http://placehold.it/360x268",
         description: Description,
         ingredients: {
           __template__: "ingredient",
