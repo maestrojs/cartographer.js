@@ -162,6 +162,14 @@ Template = (name) ->
       if not _.isObject content
         properties.value = content
       element = self.html[tag]( properties )
+    else if tag == "IMG"
+      properties = $.extend(properties, {
+        src: content.src || content || originalElement.src,
+        alt: content.alt || content || originalElement.alt,
+        width: content.width || originalElement.width || "",
+        height: content.height || originalElement.height || ""
+      })
+      element = self.html[tag]( properties )
     else
       element = self.html[tag]( properties, content )
 
