@@ -38,11 +38,17 @@ Template = (name) ->
 
       # if there's a template here, it takes the place of the current element
       if template
-        handleTemplate(
-          template,
-          elementFqn + "." + template,
-          (x) -> crawl namespace, x, templates, onDone
-        )
+        if not templates[template]
+          templates[template] = template
+          handleTemplate(
+            template,
+            elementFqn + "." + template,
+            (x) -> crawl namespace, x, templates, (f) ->
+              self.factories[template] = f
+              onDone f
+          )
+        else
+          onDone () -> self.factories[template].apply(self, [].slice.call(arguments,0))
       else
         # otherwise, process this element directly
         # this requires a depth-first approach since we don't know
