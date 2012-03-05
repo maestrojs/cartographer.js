@@ -8,7 +8,8 @@ require.config({
       'infuser': '../ext/infuser-0.2.0',
       'postal': '../ext/postal-0.4.0',
       'postal.diagnostics': '../ext/postal.diagnostics',
-      'cartographer': '../lib/cartographer.amd'
+      'cartographer': '../lib/cartographer.amd',
+      'postal.adapter': '../lib/postal.adapter.amd.min'
     }
 });
 
@@ -20,7 +21,8 @@ require(
         'postal',
         //'postal.diagnostics',
         'infuser',
-        'cartographer'],
+        'cartographer',
+        'postal.adapter'],
     function(require, $, _, postal, infuser, cartographer) {
     var BuildIngredientList, BuildSteps, Ingredient, Recipe, Step, cart, dataBus, dom, recipe1, recipe2, recipes;
     dom = void 0;

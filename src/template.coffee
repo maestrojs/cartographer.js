@@ -27,7 +27,6 @@ Template = (name) ->
     element?.attributes[configuration.templateIdentifier]?.value
 
   crawl = ( namespace, element, templates, onDone ) ->
-
     if element?.nodeType and element.nodeType != 1
       onDone( () ->
         arguments[4] element.nodeValue
@@ -75,14 +74,13 @@ Template = (name) ->
       newFqn = createFqn modelFqn, newId, true, self.name
 
       val = model?[newId] || model
-      template = val.__template__
-      delete val.__template__
+      template = val?.__template__
       val = val?.value || val
       val = if _.isFunction(val) then val.call(model) else val
 
-
       # if there's a template here, it takes the place of the current element
       if template
+        delete val.__template__
         #delete templateSource.__template__
         templates[newFqn] = true
         if self.templates[template]
@@ -96,11 +94,10 @@ Template = (name) ->
                 callback instance, model, modelFqn, id, onElement
           )
       else
-          #if the value is a collection, we'll need to do our work iteratively
           childrenToCreateCount = childrenToCreate.length
           if childrenToCreate and childrenToCreateCount > 0
             # if the current value is a collection
-            collection = if val?.length then val else val?.items
+            collection = if not _.isString(val) and val?.length then val else val?.items
             collectionCount = collection?.length
             if collection and collectionCount
               # create a method for adding new elements to this template collection
@@ -135,16 +132,21 @@ Template = (name) ->
               onChildElement = (childElement) ->
                 list[listIndex++] = childElement
                 if listIndex == childrenToCreateCount
-                # get method for creating DOM element, store and return it
                   onElement makeTag( tag, element, newFqn, newId, elementId != undefined, list, model, instance)
-              controls = ( createElement( instance, val, newFqn, undefined, onChildElement ) for createElement in childrenToCreate )
+              controls = ( createElement( instance, (if element.id or not id or not model[id] then val else model[id]) , newFqn, undefined, onChildElement ) for createElement in childrenToCreate )
           else # this element has no children, it only holds the value
             onElement makeTag( tag, element, newFqn, newId, elementId != undefined, val, model, instance )
 
   makeTag = (tag, originalElement, fqn, id, hasId, val, model, templateInstance ) ->
     properties = {}
-    content = if _.isArray(val) and not _.isString(val) then val || val?[id] else val?[id] || val
-    content = if originalElement.children.length == 0 and id == undefined then originalElement.textContent else content
+    content =
+      if _.isString(val)
+        val
+      else if _.isArray(val)
+        val || val?[id]
+      else
+        val?[id] || val
+    content = if originalElement.children.length == 0 and id == undefined and (_.isObject(val) or _.isArray(val)) then originalElement.textContent else content
     element = {}
 
     if hasId
@@ -157,6 +159,8 @@ Template = (name) ->
       properties["value"] = originalElement["value"]
     if originalElement["id"]
       properties["id"] = originalElement["id"]
+    if model?[id]?.class
+      properties["class"] = model[id].class
 
     if tag == "INPUT"
       if not _.isObject content
@@ -170,6 +174,12 @@ Template = (name) ->
         height: content.height || originalElement.height || ""
       })
       element = self.html[tag]( properties )
+    else if tag == "A"
+      properties = $.extend(properties, {
+        href: model.link || originalElement.href,
+        alt: model.alt || content || originalElement.alt
+      })
+      element = self.html[tag]( properties, content )
     else
       element = self.html[tag]( properties, content )
 

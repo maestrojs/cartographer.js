@@ -15,6 +15,8 @@
     },
     "name": {
         "amd.js": "cartographer.amd.js",
-        "browser.js": "cartographer.js"
+        "browser.js": "cartographer.js",
+        "adapter.js": "postal.adapter.js",
+        "adapter.amd.js": "postal.adapter.amd.js"
     }
 }
