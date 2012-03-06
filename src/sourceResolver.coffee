@@ -20,7 +20,7 @@ SourceResolver = () ->
           call(
             name,
             (x) ->
-              onFound $(x)[0],
+              onFound $(x),
             () ->
               index++
               finder()

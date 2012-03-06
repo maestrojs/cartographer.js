@@ -28,3 +28,4 @@ QUnit.specify "flat template", ->
         resume()
         ), 200
       )
+

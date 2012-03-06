@@ -42,12 +42,10 @@ templates =
   'iterative-external':   '<div>
                              <h3>Grocery List</h3>
                              <div data-id="listItems">
-                                <span></span>
+                                <div></div>
                              </div>
                           </div>',
-  'iterative-item':      '<div>
-                             <span data-id="name"></span><span> - </span><span data-id="qty"></span>
-                          </div>',
+  'iterative-item':      '<span data-id="name"></span><span> - </span><span data-id="qty"></span>',
   'interpol':           '<div><h3>O</h3>nce upon a time, there was a <span data-id="type"></span> named <span data-id="name"></span>.</div>'
 
 

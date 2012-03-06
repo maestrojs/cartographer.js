@@ -44,3 +44,24 @@ QUnit.specify "iterative external template", ->
           assert(model.listItems[2].__template__).equals("iterative-item")
           resume()
     )
+
+    ###
+<divdata-id="iterative"><h3>GroceryList</h3>
+  <divdata-id="iterative.listItems"></div>
+  <divdata-id="iterative.listItems"></div>
+  <divdata-id="iterative.listItems"></div>
+  <divdata-id="iterative.listItems"></div>
+  <divdata-id="iterative.listItems"></div>
+  <divdata-id="iterative.listItems"></div>
+  <divdata-id="iterative.listItems"><div>
+  </div> <div></div>
+  <div>
+    <spandata-id="iterative.listItems.0.name">banana</span><span>-</span><spandata-id="iterative.listItems.0.qty">allofthem</span></div>
+  <div>
+  </div> <div></div>
+  <div>
+    <spandata-id="iterative.listItems.1.name">apple</span><span>-</span><spandata-id="iterative.listItems.1.qty">2</span>
+  </div>
+  <div></div><div></div>
+  <div><spandata-id="iterative.listItems.2.name">oranges</span><span>-</span><spandata-id="iterative.listItems.2.qty">three</span></div></div></div>
+<divdata-id="iterative"><h3>GroceryList</h3><divdata-id="iterative.listItems"><div><spandata-id="iterative.listItems.0.name">banana</span><span>-</span><spandata-id="iterative.listItems.0.qty">allofthem</span></div><div><spandata-id="iterative.listItems.1.name">apple</span><span>-</span><spandata-id="iterative.listItems.1.qty">2</span></div><div><spandata-id="iterative.listItems.2.name">oranges</span><span>-</span><spandata-id="iterative.listItems.2.qty">three</span></div></div></div>"

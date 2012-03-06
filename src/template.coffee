@@ -17,7 +17,7 @@ Template = (name) ->
       resolver.resolve(
         template,
         (x) ->
-          self.templates[templateId] = x
+          #self.templates[templateId] = x
           onTemplate(x)
         ,
         () -> console.log "Could not resolve tempalte #{template}")
@@ -26,122 +26,209 @@ Template = (name) ->
   elementTemplate = ( element ) ->
     element?.attributes[configuration.templateIdentifier]?.value
 
-  crawl = ( namespace, element, templates, onDone ) ->
-    if element?.nodeType and element.nodeType != 1
-      onDone( () ->
-        arguments[4] element.nodeValue
-      )
+  crawl = ( namespace, markup, templates, onDone ) ->
+    if markup?.length and ( not markup.nodeType || markup.nodeType == 1 )
+      if markup.length > 1
+        total = markup.length
+        index = 0
+        list = new Array(total)
+        onFactory = (factory) ->
+          list[index++] = factory
+          console.log("got factory #{factory} for index #{index}")
+          if index == total
+            onDone (templateInstance, model, fqn, id, callback) ->
+              ( fx templateInstance, model, fqn, id, callback ) for fx in list
+        for elementIndex in [0..total-1]
+          crawl namespace, markup[elementIndex], templates, onFactory
+      else crawl namespace, markup[0], templates, onDone
     else
-      template = elementTemplate(element) || (if not element then namespace else undefined )
-      elementId = element?.attributes[configuration.elementIdentifier]?.value
-      elementFqn = namespace + if elementId then ".#{elementId}" else ''
-
-      # if there's a template here, it takes the place of the current element
-      if template
-        if not templates[template]
-          templates[template] = template
-          handleTemplate(
-            template,
-            elementFqn + "." + template,
-            (x) -> crawl namespace, x, templates, (f) ->
-              self.factories[template] = f
-              onDone f
-          )
-        else
-          onDone () -> self.factories[template].apply(self, [].slice.call(arguments,0))
+      if markup?.nodeType and markup.nodeType != 1
+        onDone( () ->
+          arguments[4] markup.nodeValue
+        )
       else
-        # otherwise, process this element directly
-        # this requires a depth-first approach since we don't know
-        # what it will take to produce this element until we know all
-        # the children involved
-        children = element.childNodes
-        childFunctionsExpected = children.length
+        template = if markup then template = elementTemplate markup else namespace
+        elementId = markup?.attributes[configuration.elementIdentifier]?.value
+        elementFqn = namespace + if elementId then ".#{elementId}" else ''
 
-        continueProcessing = (contentList) ->
-          factory = buildCreateElement element, elementId, elementFqn, contentList, templates
-          self.factories[elementFqn] = factory
-          onDone( factory )
+        # if there's a template here, it takes the place of the current element
+        if template
+          if not templates[template]
+            templates[template] = template
+            handleTemplate(
+              template,
+              elementFqn + "." + template,
+              (x) -> crawl namespace, x, templates, (f) ->
+                self.factories[template] = f
+                onDone f
+            )
+          else
+            onDone () -> self.factories[template].apply(self, [].slice.call(arguments,0))
 
-        if children.length > 0
-          childrenFunctions = []
-          addChildFunction = ( factory ) ->
-            childrenFunctions.push( factory )
-            if childrenFunctions.length == childFunctionsExpected
-              continueProcessing( childrenFunctions )
-          ( crawl elementFqn, child, templates, addChildFunction ) for child in children
+
+          ###if self.templates[template]
+            onDone self.templates[template]
+          else
+            handleTemplate(template, template, (x) ->
+                crawl elementFqn, x, templates, ( callback ) ->
+                  self.templates[template] = callback
+                  onDone callback
+            )###
         else
-          continueProcessing []
+          # otherwise, process this element directly
+          # this requires a depth-first approach since we don't know
+          # what it will take to produce this element until we know all
+          # the children involved
+          children = markup.childNodes
+          childFunctionsExpected = children.length
+
+          continueProcessing = (contentList) ->
+            factory = buildCreateElement markup, elementId, elementFqn, contentList, templates
+            self.factories[elementFqn] = factory
+            onDone( factory )
+
+          if children.length > 0
+            childrenFunctions = []
+            addChildFunction = ( factory ) ->
+              childrenFunctions.push( factory )
+              if childrenFunctions.length == childFunctionsExpected
+                continueProcessing( childrenFunctions )
+            ( crawl elementFqn, child, templates, addChildFunction ) for child in children
+          else
+            continueProcessing []
+
+  getActualValue = (value, context) ->
+    if _.isFunction value then value.call(context) else value
+
+  getNestedValue = (value, property) ->
+    if value and value[property] then value[property] else undefined
+
+  handleModelTemplate = (template, templateInstance, model, modelFqn, id, context, onElement) ->
+    # we've parsed this template before, it's ready to run
+    if self.templates[template]
+      #self.templates[template]( templateInstance, model, modelFqn, id, context, onElement )
+      self.templates[template]( templateInstance, model, modelFqn, id, onElement )
+    else
+      handleTemplate(template, template, (x) ->
+        crawl context.elementFqn, x, templates, ( callback ) ->
+          self.templates[template] = callback
+          #callback  templateInstance, model, modelFqn, id, context, onElement
+          callback  templateInstance, model, modelFqn, id, onElement
+      )
+
+  createChildren = ( iterations, templateInstance, model, modelFqn, id, context, onElement) ->
+    isCollection = iterations > 0
+    if not isCollection
+      iterations = 1
+
+    children = context.childrenToCreate
+    total = children.length * iterations
+
+    index = 0
+    list = new Array(total)
+    onChild = (childIndex, child) ->
+      list[index++] = child
+      if index >= total
+        onElement makeTag context.tag, context.element, modelFqn, childIndex, context.elementId, list, model, templateInstance
+
+    for iteration in [0..iterations-1]
+      for create in children
+        childId = id
+        childModel = model
+        childFqn = modelFqn
+        if id == undefined and isCollection
+          childId = iteration
+          childModel = model[childId]
+          childFqn = "#{modelFqn}.#{childId}"
+        create templateInstance, childModel, childFqn, childId, (x) -> onChild(childId, x)
+
+  create = ( templateInstance, model, modelFqn, id, context, onElement ) ->
+    elementId = context.elementId
+    #console.log "#{elementId} || #{id} -> #{JSON.stringify(model)}"
+    id = elementId || id #set id to the current position or the dom position
+
+
+    # is this bound to the model or just structural
+    isBound = elementId != undefined and elementId != ""
+    idForFqn = if isBound then id else ""
+
+    newFqn = createFqn modelFqn, idForFqn, false, self.name
+    #console.log "#{isBound} - #{idForFqn} - #{newFqn}"
+
+    # does this poisition of the model have a template?
+    modelTemplate = getActualValue model.__template__, model
+
+    # does the member we're on have a template?
+    memberTemplate = getActualValue model[id]?.__template__, model
+    memberValue = getActualValue( getNestedValue(model[id], "__value__" ) || model[id], model)
+
+    # used to advance the model to the next level
+    childModel = if isBound then model[id] else model
+
+    # if there is a template on the model itself
+    #    then we parse this element but replace it's children
+    ###if modelTemplate
+      delete model.__template__
+      context.childrenToCreate = [
+        ( templateInstance, model, modelFqn, id, context, onElement ) ->
+          handleModelTemplate modelTemplate, templateInstance, model, modelFqn, id, context, onElement
+      ]###
+
+    # if there is a template on the member
+    #    then we replace/insert an element at the current location
+    #if memberTemplate or modelTemplate
+    #  delete model[id].__template__
+    template = ""
+    if memberTemplate
+      template = memberTemplate
+      delete model[id].__template__
+    if modelTemplate
+      template = modelTemplate
+      delete model.__template__
+    if template
+      handleModelTemplate template, templateInstance, model, modelFqn, id, context, onElement
+
+    #if not memberTemplate
+    else
+      childElements = context?.childrenToCreate.slice(0)
+      childElementCount = childElements.length
+      # are there elements to create under this one?
+      if childElementCount > 0
+
+        # if the value has items
+        collection = getNestedValue(memberValue, "__items__") || memberValue
+        collectionLength = if collection then collection.length else 0
+        isCollection = if collectionLength and not _.isString(collection) then collection
+
+        # create a 'point-in-time' closure around the creation of this set of
+        # child elements so that new items can be added to the collection
+        # without having to rebuild all the state/metadata required
+        self.factories[newFqn+"_add"] = ( itemIndex, itemModel, onItem ) ->
+          createChildren 0, templateInstance, itemModel, newFqn, itemIndex, context, onItem
+
+        if isCollection
+          createChildren collectionLength, templateInstance, childModel, newFqn, undefined, context, onElement
+
+        else # the current value is not a collection, but there are still child elements
+          createChildren 0, templateInstance, childModel, newFqn, id, context, onElement
+
+      else # this element has no children, it only holds the value
+        onElement makeTag( context.tag, context.element, newFqn, id, isBound, memberValue, model, templateInstance )
 
   buildCreateElement = ( element, elementId, elementFqn, childrenToCreate, templates ) ->
     #create closure around element creation
     tag = element.tagName.toUpperCase()
-    return ( instance, model, modelFqn, id, onElement ) ->
-      newId = if id == undefined then elementId else id
-      newFqn = createFqn modelFqn, newId, true, self.name
 
-      val = model?[newId] || model
-      template = val?.__template__
-      val = val?.value || val
-      val = if _.isFunction(val) then val.call(model) else val
+    context =
+      tag: tag,
+      element: element,
+      elementId: elementId,
+      elementFqn: elementFqn,
+      childrenToCreate: childrenToCreate,
+      templates: templates
 
-      # if there's a template here, it takes the place of the current element
-      if template
-        delete val.__template__
-        #delete templateSource.__template__
-        templates[newFqn] = true
-        if self.templates[template]
-          self.templates[template]( instance, model, modelFqn, id, onElement)
-        else
-          handleTemplate(
-            template,
-            template,
-            (x) -> crawl elementFqn, x, templates, ( callback ) ->
-                self.templates[template] = callback
-                callback instance, model, modelFqn, id, onElement
-          )
-      else
-          childrenToCreateCount = childrenToCreate.length
-          if childrenToCreate and childrenToCreateCount > 0
-            # if the current value is a collection
-            collection = if not _.isString(val) and val?.length then val else val?.items
-            collectionCount = collection?.length
-            if collection and collectionCount
-              # create a method for adding new elements to this template collection
-              children = childrenToCreate.slice(0)
-              self.factories[newFqn + "_add"] = ( newIndex, newModel ) ->
-                callback = arguments[4]
-                childList = new Array(childrenToCreate)
-                childIndex = 0
-                onChildElement = (childElement) ->
-                  childList[childIndex++] = childElement
-                  if childIndex == childrenToCreateCount
-                    callback childList
-                factory( instance, newModel, newFqn, newIndex, onChildElement ) for factory in children
-              # for each value in the collection
-              # create the set of child elements for that value
-
-              total = childrenToCreateCount * collectionCount
-              list = new Array(total)
-              listIndex = 0
-              onChildElement = (childElement) ->
-                list[listIndex++] = childElement
-                if listIndex == total
-                  onElement makeTag( tag, element, newFqn, newId, elementId != undefined, list, model, instance )
-
-              for indx in [0..collectionCount-1]
-                for factory in childrenToCreate
-                  factory( instance, collection, newFqn, indx, onChildElement )
-
-            else # the current value is not a collection, but there are still child elements
-              list = new Array(childrenToCreateCount)
-              listIndex = 0
-              onChildElement = (childElement) ->
-                list[listIndex++] = childElement
-                if listIndex == childrenToCreateCount
-                  onElement makeTag( tag, element, newFqn, newId, elementId != undefined, list, model, instance)
-              controls = ( createElement( instance, (if element.id or not id or not model[id] then val else model[id]) , newFqn, undefined, onChildElement ) for createElement in childrenToCreate )
-          else # this element has no children, it only holds the value
-            onElement makeTag( tag, element, newFqn, newId, elementId != undefined, val, model, instance )
+    return ( instance, model, fqn, id, onElement ) ->
+      create( instance, model, fqn, id, context, onElement )
 
   makeTag = (tag, originalElement, fqn, id, hasId, val, model, templateInstance ) ->
     properties = {}
@@ -167,6 +254,9 @@ Template = (name) ->
       properties["id"] = originalElement["id"]
     if model?[id]?.class
       properties["class"] = model[id].class
+
+
+    #console.log("#{tag} - #{fqn} - #{id} - #{val} - #{JSON.stringify(model)}")
 
     if tag == "INPUT"
       if not _.isObject content
@@ -236,7 +326,7 @@ Template = (name) ->
         childKey,
         ((dom) ->
           #markup = dom.toString()
-          newElement = $(dom)[0]
+          newElement = dom
           onResult fqn, newElement, "update")
       )
 
@@ -248,16 +338,13 @@ Template = (name) ->
 
     addName = fqn + "_add"
     if self.factories[addName]
-      #count = $(self.generated[templateId][fqn].toString())[0].children.length
       count = $(self.generated[templateId][fqn])[0].children.length
       self.factories[addName](
         count,
         model,
-        undefined,
-        undefined,
         ((dom) ->
           #dom = markup.toString()
-          newElement = $(dom)[1]
+          newElement = dom
           onResult fqn, newElement, "add")
       )
 
