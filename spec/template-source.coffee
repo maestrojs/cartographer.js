@@ -1,4 +1,9 @@
 templates =
+  anchor:                 '<div data-id="list" class="row">
+                            <div>
+                              <a></a>
+                            </div>
+                          </div>',
   flat:                   '<div>
                             <h3>First Name</h3>
                             <span data-id="firstName"></span>

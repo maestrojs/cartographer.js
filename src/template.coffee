@@ -127,7 +127,11 @@ class Template
 
     # does the member we're on have a template?
     memberTemplate = getActualValue model[id]?.__template__, model
-    memberValue = getActualValue( getNestedValue(model[id], "__value__" ) || model[id], model)
+    memberValue = getActualValue(
+        getNestedValue(model[id], "__value__" ) ||
+        model[id] ||
+        getNestedValue(model, "__value__"),
+      model)
 
     # used to advance the model to the next level
     childModel = if isBound then model[id] else model
