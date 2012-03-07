@@ -45,7 +45,7 @@ templates =
                                 <div></div>
                              </div>
                           </div>',
-  'iterative-item':      '<span data-id="name"></span><span> - </span><span data-id="qty"></span>',
+  'iterative-item':      '<span><span data-id="name"></span><span> - </span><span data-id="qty"></span></span>',
   'interpol':           '<div><h3>O</h3>nce upon a time, there was a <span data-id="type"></span> named <span data-id="name"></span>.</div>'
 
 
