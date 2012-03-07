@@ -116,6 +116,12 @@ class Template
     isBound = elementId != undefined and elementId != ""
     idForFqn = if isBound then id else ""
     newFqn = createFqn modelFqn, idForFqn, false, self.name
+
+    # if the element is bound but no model is present, skip this render
+    if isBound and not model[id]
+      onElement ""
+      return
+
     # does this poisition of the model have a template?
     modelTemplate = getActualValue model.__template__, model
 
@@ -220,10 +226,14 @@ class Template
     if not self.ready
       self.deferredApplyCalls.push( () -> self.apply(id, model, onResult ) );
     else
-      result = self.render( id, model, id, undefined, (x) ->
-          element = $(x)[0]
-          $(element).attr(configuration.elementIdentifier, id)
-          onResult id, element, "render"
+      self.render( id, model, id, undefined, (x) ->
+          result = {}
+          if not x.length
+            result = $(x)[0]
+            $(result).attr(configuration.elementIdentifier, id)
+          else
+            result = getHtmlFromList(x, self.html)
+          onResult id, result, "render"
       )
 
   update: (fqn, model, onResult) ->

@@ -5,6 +5,10 @@ templates =
                             <h3>Last Name</h3>
                             <span data-id="lastName"></span>
                           </div>',
+  rootless:              '<h3>First Name</h3>
+                          <span data-id="firstName"></span>
+                          <h3>Last Name</h3>
+                          <span data-id="lastName"></span>',
   func:                   '<div>
                               <h2 data-id="fullName"></h2>
                               <h3>First Name</h3>
