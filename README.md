@@ -13,10 +13,8 @@ I wanted to create a templating engine that would compliment more complex, async
 * Generate new markup for new collection items
 * Fully qualified namespacing for elements that map to the model
 * A flexible way to define custom sources for templates
-* Event handling through delegation to the top level element of the rendered instance
 * Integration with Postal for messaging
 	* all API methods supported through Postal topography
-	* Convention for auto-wiring topic subscriptions that correlate with template control/event to DOM event
 * Configurable element identifier
 	* The default attribute used to identify the element for Cartographer is "data-id"
 * Configurable template attribute
@@ -43,18 +41,6 @@ Adding creates a new set of markup for an existing template / model collection. 
 ### Update - cartographer.update( templateId, targetFqn, model, onMarkup )
 Updating creates a new render at any level in the template hierarchy. The targetFqn is the level of the DOM template where the render should begin.
 
-### Watch Event - cartographer.watchEvent( templateId, event, onEvent )
-Watching an event attaches a top-level, delegated, event handler to the parent element of the rendered instance. The event name and handler behave as expected. The event handlers are cached so that even in the event of an additional render of the instance or a delay in rendering, the events are wired up once the top element is available.
-
-The onEvent callback gets the following arguments:
- * The template instance id
- * The control fqn
- * The original element the event triggered for
- * The event name that triggered
-
-### Ignore Event - cartographer( templateId, event )
-Removes a previously attached event.
-
 ### Adding Template Resolvers - cartographer.resolver.appendSource|prependSource( resolverFunction )
 Cartographer looks for the HTML using the template name. It searches its resolvers, in order, and by default has resolvers for in-page and infuser. If you glance at template-source.coffee under the spec folder, you'll see that it's trivial to create these and provide markup from any source you like.
 
@@ -68,12 +54,8 @@ By default, Cartographer uses 'data-id' as the means to identify and correlate a
 
 	cartographer.config.elementIdentifier
 
-
 ## Examples
 Currently, there aren't a lot of great examples but the unit tests actually show all of the features except for eventing.
-
-
-
 
 ## Dependencies
 
@@ -81,97 +63,4 @@ Cartographer has a number of dependencies which you must either include on your 
 
 If you happen to use require, here are the path aliases it expects:
 
-	'jQuery', 'underscore', 'postal', 'infuser', 'DOMBuilder'
-
-
-# Postal Topology
-
-
-## Map
-    exchange            cartographer
-    topic               api
-#### Message Properties
-    name                template
-    operation           "map"
-
-## Apply
-    exchange            cartographer
-    topic               api
-#### Message Properties
-	name                template name
-    template            template instance id
-    model               object to base the render on
-    operation           "apply"
-### Responds With
-    exchange            cartographer
-    topic               render.{templateId}
-#### Message Properties
-    template            template instance id
-    markup              the generated DOM
-    operation           "render"
-
-## Add
-    exchange            cartographer
-    topic               api
-### Message
-    template            the template instance id
-    id                  the fully qualified id of the list control to add to
-    model               object to create the new item template from
-    operation           "add"
-### Responds With
-    exchange            cartographer
-    topic               render.{templateId}
-#### Message Properties
-    template            template instance id
-    parent              the fully qualified id for the parent
-    markup              the generated DOM for the new item
-    operation           "add"
-
-## Update
-    exchange            cartographer
-    topic               api
-#### Message Properties
-    template            the template instance id
-    id                  the fully qualified id of the control to update
-    model               object to update the control template with
-    operation           "update"
-### RespondsWith
-    exchange            cartographer
-    topic               render.{templateId}
-#### Message Properties
-    template            template instance id
-    id                  the fully qualified id of the item
-    markup              the generated DOM for the new item
-    operation           "update"
-
-## Append Resolver
-    exchange            cartographer
-    topic               api
-#### Message Properties
-    order               "append"
-    operation           "resolver"
-    resolver            callback in the form of function( name, onSuccess, onFailure )
-
-## Prepend Resolver
-    exchange            cartographer
-    topic               api
-#### Message Properties
-    order               "prepend"
-    operation           "resolver"
-    resolver            callback in the form of function( name, onSuccess, onFailure )
-
-## Watch Event
-    exchange            cartographer
-    topic               api
-#### Message Properties
-    operation           "watch"
-    template            template instance id
-    event               event to watch for
-
-## Ignore Event
-    exchange            cartographer
-    topic               api
-#### Message Properties
-    operation           "ignore"
-    template            template instance id
-    event               event to watch for
+	'jQuery', 'underscore', 'infuser', 'DOMBuilder'

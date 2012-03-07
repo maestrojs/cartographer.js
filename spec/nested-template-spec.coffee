@@ -33,8 +33,3 @@ QUnit.specify "nested template", ->
           assert(markup).equals scrub(expected)
           resume()
     )
-
-###
-
-<divdata-id="nested"><h3>Parent</h3><spandata-id="nested.firstName">Alex</span><span>-</span><spandata-id="nested.lastName">Robson</span><divdata-id="nested.child"><h3data-id="nested.child.child">Child</h3><spandata-id="nested.child.child">[objectObject]</span><spandata-id="nested.child.child">-</span><spandata-id="nested.child.child">[objectObject]</span></div></div>
-<divdata-id="nested"><h3>Parent</h3><spandata-id="nested.firstName">Alex</span><span>-</span><spandata-id="nested.lastName">Robson</span><divdata-id="nested.child"><h3>Child</h3><spandata-id="nested.child.firstName">Dexter</span><span>-</span><spandata-id="nested.child.lastName">Robson</span></div></div>"

@@ -39,12 +39,8 @@ QUnit.specify "iterative external template", ->
 
         setTimeout () ->
           assert(markup).equals scrub(expected)
-          #assert(model.listItems[0].__template__).equals("iterative-item")
-          #assert(model.listItems[1].__template__).equals("iterative-item")
-          #assert(model.listItems[2].__template__).equals("iterative-item")
+          assert(model.listItems[0].__template__).equals("iterative-item")
+          assert(model.listItems[1].__template__).equals("iterative-item")
+          assert(model.listItems[2].__template__).equals("iterative-item")
           resume()
     )
-
-    ###
-<divdata-id="iterative2"><h3>GroceryList</h3><divdata-id="iterative2.listItems"><div><spandata-id="iterative2.listItems.0.name">banana</span></div><div><spandata-id="iterative2.listItems.1.name">apple</span></div><div><spandata-id="iterative2.listItems.2.name">oranges</span></div></div></div>
-<divdata-id="iterative2"><h3>GroceryList</h3><divdata-id="iterative2.listItems"><div><spandata-id="iterative2.listItems.0.name">banana</span><span>-</span><spandata-id="iterative2.listItems.0.qty">allofthem</span></div><div><spandata-id="iterative2.listItems.1.name">apple</span><span>-</span><spandata-id="iterative2.listItems.1.qty">2</span></div><div><spandata-id="iterative2.listItems.2.name">oranges</span><span>-</span><spandata-id="iterative2.listItems.2.qty">three</span></div></div></div>"

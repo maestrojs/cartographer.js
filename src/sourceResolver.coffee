@@ -1,21 +1,23 @@
-SourceResolver = () ->
-  self = this
-  sources = []
+class SourceResolver
 
-  @appendSource = (source) ->
-    sources.push source
+  constructor: ->
+    @sources = []
 
-  @prependSource = (source) ->
-    sources.unshift source
+  appendSource: (source) ->
+    @sources.push source
 
-  @resolve = (name, onFound, notFound) ->
+  prependSource: (source) ->
+    @sources.unshift source
+
+  resolve: (name, onFound, notFound) ->
+    self = this
     # iterate through sources until
     #   1 - the finder returns a template and calls onFound with result
     #   2 - all sources are exhausted
     index = 0
     finder = -> # this list is required, DO NOT REMOVE
     finder = () ->
-        call = sources[index]
+        call = self.sources[index]
         if call
           call(
             name,
@@ -28,8 +30,6 @@ SourceResolver = () ->
         else
           notFound()
     finder()
-
-  self
 
 resolver = new SourceResolver()
 

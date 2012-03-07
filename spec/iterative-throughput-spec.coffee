@@ -29,6 +29,6 @@ QUnit.specify "iterative throughput", ->
               if iterations-- <= 0
                 elapsed = new Date().getTime() - started
                 console.log "#{elapsed} ms"
-                assert( elapsed < total*3 ).isTrue()
+                assert( elapsed < total*10 ).isTrue()
                 resume()
     )
