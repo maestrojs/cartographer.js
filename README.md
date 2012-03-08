@@ -36,7 +36,7 @@ Creates a template from a named HTML source that will be used to generate markup
 Renders the templateName and assigns the rendered instance templateId. The template instance id becomes the top of the fqn for all controls in the rendered instance. onMarkup is a function with 3 arguments: template id, markup and operation ( included for integration purposes ).
 
 ### Add - cartographer.add( templateId, containerControlFqn, model, onMarkup )
-Adding creates a new set of markup for an existing template / model collection. The containerControlFqn is the fully qualified name of the containing list control. The other arguments are like the 'apply' call.
+Adding creates a new set of markup for an existing template / model collection. The containerControlFqn is the fully qualified name of the containing list control. The other arguments are like the 'render' call.
 
 ### Update - cartographer.update( templateId, targetFqn, model, onMarkup )
 Updating creates a new render at any level in the template hierarchy. The targetFqn is the level of the DOM template where the render should begin.

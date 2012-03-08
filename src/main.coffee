@@ -17,7 +17,7 @@ class Cartographer
     @containerLookup[id] = @templates[name]
     if @templates[name]
       template = @templates[name]
-      template.apply id, model, (id, op, result) ->
+      template.render id, model, (id, op, result) ->
         self.instanceCache[id] = result
         onMarkup id, op, result
     else if model.__template__ and id

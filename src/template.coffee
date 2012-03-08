@@ -215,9 +215,11 @@ class Template
       })
       element = self.html[tag]( properties )
     else if tag == "A"
+      link = model[id]?.link || model.link || originalElement.href
+      alt = model[id]?.alt || model.alt || content || originalElement.alt
       properties = $.extend(properties, {
-        href: model.link || originalElement.href,
-        alt: model.alt || content || originalElement.alt
+        href: link,
+        alt: alt
       })
       element = self.html[tag]( properties, content )
     else

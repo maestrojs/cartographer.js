@@ -1,5 +1,6 @@
 templates =
-  anchor:                 '<div data-id="list" class="row">
+  anchor:                 '<a data-id="top"></a>
+                            <div data-id="list" class="row">
                             <div>
                               <a></a>
                             </div>
