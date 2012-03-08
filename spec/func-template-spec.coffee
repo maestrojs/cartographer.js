@@ -3,9 +3,9 @@ QUnit.specify "flat template", ->
   describe "flat template", ->
 
     model =
-      firstName: "Alex"
-      lastName: "Robson"
-      fullName: () -> "#{@.firstName}  #{@.lastName}"
+        firstName: "Alex"
+        lastName: "Robson"
+        fullName: () -> "#{@.firstName}  #{@.lastName}"
 
 
     flatTemplate = new Template 'func'
@@ -22,7 +22,7 @@ QUnit.specify "flat template", ->
 
       markup = ''
 
-      flatTemplate.apply 'func', model, (id, x, op) ->
+      flatTemplate.render 'func', model, (id, x, op) ->
         markup = scrub(x)
 
       setTimeout (() ->

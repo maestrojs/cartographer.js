@@ -21,7 +21,7 @@ QUnit.specify "template change", ->
         markup = ''
         newElement = ''
 
-        flatTemplate.apply 'flat', model, (id, x, op) ->
+        flatTemplate.render 'flat', model, (id, x, op) ->
           markup = scrub(x)
 
         setTimeout () ->

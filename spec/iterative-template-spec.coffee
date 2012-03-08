@@ -36,7 +36,7 @@ QUnit.specify "iterative template", ->
     it "should produce the correct markup", async(() ->
 
         markup = ''
-        iterativeTemplate.apply 'iterative', model, (id, x, op) ->
+        iterativeTemplate.render 'iterative', model, (id, x, op) ->
           markup = scrub(x)
 
         setTimeout () ->

@@ -34,7 +34,7 @@ QUnit.specify "iterative external template", ->
     it "should produce the correct markup", async(() ->
 
         markup = ''
-        iterativeExternalTemplate.apply 'iterative2', model, (id, x, op) ->
+        iterativeExternalTemplate.render 'iterative2', model, (id, x, op) ->
           markup = scrub(x)
 
         setTimeout () ->

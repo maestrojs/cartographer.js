@@ -28,7 +28,7 @@ QUnit.specify "anchor template", ->
 
       markup = ''
 
-      anchorTemplate.apply 'anchor', model, (id, x, op) ->
+      anchorTemplate.render 'anchor', model, (id, x, op) ->
         markup = scrub(x)
 
       setTimeout (() ->

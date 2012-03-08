@@ -17,7 +17,7 @@ QUnit.specify "rootless template", ->
 
       markup = ''
 
-      rootlessTemplate.apply 'flat', model, (id, x, op) ->
+      rootlessTemplate.render 'flat', model, (id, x, op) ->
         markup = scrub(x)
 
       setTimeout (() ->

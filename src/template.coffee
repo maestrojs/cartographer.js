@@ -7,12 +7,12 @@ class Template
     @html = DOMBuilder.dom
     @templates = {}
     @deferredApplyCalls = []
-    @render = () ->
+    @renderTemplate = () ->
     @ready = false
     @factories = {}
 
     @crawl @name, undefined, {}, (x) ->
-      self.render = x
+      self.renderTemplate = x
       self.ready = true
       if self.deferredApplyCalls.length > 0
         for call in self.deferredApplyCalls
@@ -224,13 +224,13 @@ class Template
       element = self.html[tag]( properties, content )
     element
 
-  apply: (id, originalModel, onResult) ->
+  render: (id, originalModel, onResult) ->
     self = this
     model = $.extend(true, {}, originalModel);
     if not self.ready
-      self.deferredApplyCalls.push( () -> self.apply(id, model, onResult ) );
+      self.deferredApplyCalls.push( () -> self.render(id, model, onResult ) );
     else
-      self.render( id, model, id, undefined, (x) ->
+      self.renderTemplate( id, model, id, undefined, (x) ->
           result = {}
           if not x.length
             result = $(x)[0]

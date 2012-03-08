@@ -20,7 +20,7 @@ QUnit.specify "parent-child template", ->
     it "should produce the correct markup", async(() ->
 
         markup = ''
-        parentChildTemplate.apply 'parentChildTest', model, (id, x, op) ->
+        parentChildTemplate.render 'parentChildTest', model, (id, x, op) ->
           markup = scrub(x)
 
         setTimeout () ->

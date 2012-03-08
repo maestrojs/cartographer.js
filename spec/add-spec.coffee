@@ -36,7 +36,7 @@ QUnit.specify "template add", ->
         markup = ''
         newElement = ''
 
-        iterativeTemplate.apply 'iterative', model, (id, x, op) ->
+        iterativeTemplate.render 'iterative', model, (id, x, op) ->
           markup = scrub(x)
 
         iterativeTemplate.add("iterative.listItems", { name: "granola", qty: "one feedbag" }, (id, x, op) ->
