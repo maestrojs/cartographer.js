@@ -32,7 +32,7 @@ Partial renders can be done as an add or update. Adding is intended to support r
 ### Map - cartographer.map(templateName)
 Creates a template from a named HTML source that will be used to generate markup from JSON.
 
-### Apply - cartographer.apply( templateName, templateId, model, onMarkup )
+### Apply - cartographer.render( templateName, templateId, model, onMarkup )
 Renders the templateName and assigns the rendered instance templateId. The template instance id becomes the top of the fqn for all controls in the rendered instance. onMarkup is a function with 3 arguments: template id, markup and operation ( included for integration purposes ).
 
 ### Add - cartographer.add( templateId, containerControlFqn, model, onMarkup )
@@ -55,7 +55,7 @@ By default, Cartographer uses 'data-id' as the means to identify and correlate a
 	cartographer.config.elementIdentifier
 
 ## Examples
-Currently, there aren't a lot of great examples but the unit tests actually show all of the features except for eventing.
+Currently, there aren't a lot of great examples but the unit tests actually show all of the features.
 
 ## Dependencies
 
