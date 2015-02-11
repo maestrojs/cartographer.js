@@ -5,8 +5,19 @@
 	"ext": "ext",
 	"lint": {},
 	"uglify": {},
-    "wrap":{
-        "prefix": "(function(context) {",
-        "suffix": "})(window);"
+	"gzip": {},
+    "hosts": {
+        "/": "./html",
+        "/play": "./play",
+        "/spec": "./spec"
+    },
+    "finalize": {
+        "header-file": "./header.txt"
+    },
+    "name": {
+        "amd.js": "cartographer.amd.js",
+        "browser.js": "cartographer.js",
+        "adapter.js": "postal.adapter.js",
+        "adapter.amd.js": "postal.adapter.amd.js"
     }
 }

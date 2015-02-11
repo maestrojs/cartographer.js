@@ -1,29 +1,42 @@
-Cartographer = () ->
-  self = this
+class Cartographer
 
-  postal.channel("cartographer").subscribe (m) ->
-    if m.map
-      self.map m.target, m.namespace
-    else if m.apply
-      self.apply m.template, m.proxy, m.render, m.error
+  constructor: ->
+    @config = configuration
+    @templates = {}
+    @containerLookup = {}
+    @instanceCache = {}
+    @resolver = resolver
 
-  @templates = {}
+  map: ( name ) ->
+    template = new Template name
+    @templates[name] = template
+    true
 
-  @map = ( target, namespace ) ->
-    template = new Template target, namespace
-    @templates[template.fqn] = template
+  render: ( name, id, model, onMarkup, onError ) ->
+    self = this
+    @containerLookup[id] = @templates[name]
+    if @templates[name]
+      template = @templates[name]
+      template.render id, model, (id, op, result) ->
+        self.instanceCache[id] = result
+        onMarkup id, op, result
+    else if model.__template__ and id
+      templateName = model.__template__
+      @map templateName
+      @render templateName, id, model, onMarkup, onError
+    else
+      onError id, "render", "No template with #{name} has been mapped"
 
-  @apply = ( template, proxy, render, error ) ->
-    templateInstance = @templates[template]
-    if templateInstance
-      result = templateInstance.apply proxy
-      if render
-        render( result, templateInstance.fqn )
-      else
-        $("#" + templateInstance.fqn ).replaceWith( result )
-    else if error
-      error()
+  add: (id, listId, model, onMarkup) ->
+    if @containerLookup[id]
+      template = @containerLookup[id]
+      template.add listId, model, onMarkup
 
-  self
+  update: (id, controlId, model, onMarkup) ->
+    if @containerLookup[id]
+      template = @containerLookup[id]
+      template.update controlId, model, onMarkup
 
-context["cartographer"] = new Cartographer()
+cartographer = new Cartographer()
+
+cartographer
